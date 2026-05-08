@@ -1,3 +1,13 @@
+> **SUPERSEDED 2026-05-07.** The CR1 / CR3 / FIX A remediation paths in the "Codex 2026-05-06 follow-up review — 4 real bugs found" section are no longer the canonical fixes:
+>
+> - **CR1 (force-thinking added at /v1/responses 7547):** replaced by `_resolve_dsv4_thinking_policy` in `vmlx_engine/server.py:749-791`, which honors caller `enable_thinking=False` instead of force-flipping.
+> - **CR3 (rep_penalty floor refactor):** rep_penalty floor is now post-rail; pinned by `tests/test_reasoning_modes.py::test_dsv4_bundle_defaults_override_stale_ui_defaults`.
+> - **FIX A (vMLX-side anchor injection):** replaced by the generator-level live-cache `</think>` finalizer `_maybe_force_think_close` in `vmlx_engine/utils/dsv4_batch_generator.py`. Pinned by `tests/test_dsv4_thinking_finalizer.py`.
+>
+> Authoritative current contract: `~/wiki/research/topics/dsv4-flash-jangtq.md` ("2026-05-07 Generator Finalizer And Full-Tail Gate") and `docs/SESSION_2026_05_06_PYTHON_ENGINE_APP_AUDIT.md` §8.9 + the 2026-05-07 update block. DSV4 is **NOT production-cleared** — long-context tail output quality remains the open blocker even after the listed fixes.
+>
+> Read this doc as historical investigation, not as a fix manual.
+
 # DSV4 Reasoning Mode Audit (2026-05-06)
 
 ## User report

@@ -879,10 +879,16 @@ DSV4 has two separate states now:
      `dsv4_long_context_full_output_game_design_long_context` because the model
      often never emits `</think>` on long/max prompts. The server fallback then
      surfaces reasoning as visible content (`content_equals_reasoning=true`).
-   - `VMLINUX_DSV4_ALLOW_CHAT=1` chat-mode comparison improved the VC form
-     prompt (`content_chars=1558`, `reasoning_chars=1146`, no duplicate), but a
-     long game prompt still length-capped with duplicated reasoning:
-     `/tmp/vmlx_dsv4_chatmode_allow_probe_1778149639.json`.
+   - Historical (superseded 2026-05-07): `VMLX_DSV4_ALLOW_CHAT=1` chat-mode
+     comparison improved the VC form prompt (`content_chars=1558`,
+     `reasoning_chars=1146`, no duplicate), but a long game prompt still
+     length-capped with duplicated reasoning:
+     `/tmp/vmlx_dsv4_chatmode_allow_probe_1778149639.json`. The
+     `VMLX_DSV4_ALLOW_CHAT` env var has been removed from `vmlx_engine/`; the
+     current rail-resolution path is `_resolve_dsv4_thinking_policy` in
+     `vmlx_engine/server.py`. The only DSV4 rail debug switch that exists today
+     is `VMLX_DSV4_FORCE_DIRECT_RAIL=1`. The earlier text in this bullet had a
+     typo (`VMLINUX_…`); both forms are obsolete.
 
 Current production interpretation:
 

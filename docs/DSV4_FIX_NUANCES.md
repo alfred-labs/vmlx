@@ -1,5 +1,15 @@
 # DSV4 + MiniMax + Ling Fix Nuances (2026-05-05)
 
+> **PARTIALLY SUPERSEDED 2026-05-07.** Multiple sections of this document have been overtaken by later DSV4 contract work. Authoritative current contract: `~/wiki/research/topics/dsv4-flash-jangtq.md` and `~/wiki/research/topics/path-dependent-cache-restore.md`. Specifically:
+>
+> - **Status framing block (immediately below):** the cache-stack carve-out described here ("DSV4 specifically runs with prefix cache effectively disabled by the truncation guard ... out of session scope") is no longer accurate. The clean N−1 prompt-key re-prefill plus frugal-mode RAM-resident terminal blocks landed in vMLX commit `ebe350b5` ("Fix DSV4 composite prefix cache restore"). DSV4 paged + L2 disk cache hits have been verified on V3-F32-MIXED. The cache stack is no longer the production blocker; long-context tail output quality is.
+> - **FIX 2 / FIX 11 / FIX 13 (force-thinking on `is not True` semantics, `VMLX_DSV4_ALLOW_CHAT=1` env opt-out, `"high"` vs `"max"` distinction, low/medium/high → high mapping):** OBSOLETE. Live policy is `_resolve_dsv4_thinking_policy` in `vmlx_engine/server.py:749-791`, which honors caller `enable_thinking=False` instead of force-flipping. `VMLX_DSV4_ALLOW_CHAT` has been removed from `vmlx_engine/`. `_normalize_dsv4_reasoning_effort` in `server.py:794-804` maps ALL of low/medium/high/max → high before the encoder.
+> - **FIX A "anchor injection" (referenced from later docs):** replaced by the live-cache `</think>` finalizer `_maybe_force_think_close` in `vmlx_engine/utils/dsv4_batch_generator.py`.
+> - **"Live Matrix Test … 2026-05-05 v1.5.21 build" (lines 587-599):** the `DeepSeek-V4-Flash-JANGTQ` bundle green-rowed there is the un-fixed F16-control bundle now hard-rejected by `vmlx_engine/loaders/load_jangtq_dsv4.py::_validate_dsv4_control_tensors`.
+> - **"Production-quality DSV4" wording (FIX 14 conclusion ~line 387):** DSV4 long-context output quality is **NOT production-cleared** as of 2026-05-07; only short / multi-turn / cache rows pass.
+>
+> Anything below this banner that does not contradict the bullet list above (e.g. FIX 9 composite-aware KV-quant carve-out, MiniMax/Ling carve-outs, code-search anchors) is still useful as historical context for the *why* of those carve-outs. Do not treat the original "Status framing" paragraph as current.
+
 **Audience:** future-me (or anyone debugging this 6 months from now). Each section is one fix; the goal is to capture *what changed*, *why it works*, *what it breaks*, and *what would resurface the same bug*.
 
 **Status framing — important:** "Coherent" in this doc means single-turn + multi-turn output is correct and reproducible. It does NOT mean "full cache stack production-ready" — DSV4 specifically runs with prefix cache effectively disabled by the truncation guard (re-prefill on every multi-turn request). MiniMax/Ling have functional cache hits but Ling has a known reconstruction-thread bug that fails-safe to full prefill. Production cache-stack readiness requires the long-term clean-prompt-boundary capture work (out of session scope).

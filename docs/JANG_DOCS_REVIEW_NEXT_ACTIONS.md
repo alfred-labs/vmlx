@@ -1,3 +1,7 @@
+> **PARTIALLY SUPERSEDED 2026-05-07.** The DSV4-specific framing in this doc — "long-context drift is fixed by V3 mixed-bit converter rebuild" / "V3 rebuild not vMLX runtime change" — is no longer accurate. The V3 mixed-bit bundle has been built and shipped as `/Users/eric/models/JANGQ/DeepSeek-V4-Flash-JANGTQ-V3-F32-MIXED`, and long-tail drift PERSISTS even at temperature=0 on the direct rail (see `~/wiki/research/topics/dsv4-flash-jangtq.md`, "What failed"). Current understanding: bit-plan numerics / V3-WIDER ablation territory, plus path-dependent cache restore (landed in vMLX commit `ebe350b5`). DSV4 is **NOT production-cleared**. The non-DSV4 actions below (Format v2 fast loader, Ling CRACK, SwitchGLU patch fragility, JangPress Python) are still valid as written.
+>
+> See also: `~/wiki/research/topics/dsv4-flash-jangtq.md` and `~/wiki/research/topics/path-dependent-cache-restore.md`.
+
 # /Users/eric/jang docs review — next actions for vMLX (2026-05-05)
 
 User said: "no don't bother with dsv4 i promise u that its fine go check and read ../jang documentation and logs and shit and code and further what to do."

@@ -1,3 +1,11 @@
+> **PARTIALLY SUPERSEDED 2026-05-07.** R2 (recommend re-adding force-thinking) and R3 (recommend rep_penalty 1.15 floor) are no longer the correct remediation paths:
+>
+> - The current contract is policy resolution via `_resolve_dsv4_thinking_policy` (`vmlx_engine/server.py:749-791`), which honors caller `enable_thinking=False` instead of force-flipping. See `tests/test_reasoning_modes.py` lines 139-222.
+> - rep_penalty handling is post-rail; pinned by `tests/test_reasoning_modes.py::test_dsv4_bundle_defaults_override_stale_ui_defaults`.
+> - The 2026-05-05 "v1.5.6 / 14/14 probe matrix" row in this trace refers to the un-fixed F16-control bundle now hard-rejected by `vmlx_engine/loaders/load_jangtq_dsv4.py::_validate_dsv4_control_tensors`. Do not cite "14/14" as current.
+>
+> Authoritative contract: `~/wiki/research/topics/dsv4-flash-jangtq.md`. DSV4 is **NOT production-cleared** — long-context tail quality is still the open blocker.
+
 # DSV4-Flash Runtime Regression — Deep Trace (2026-05-05)
 
 **Status:** Investigation in progress. NO code changes pending push.

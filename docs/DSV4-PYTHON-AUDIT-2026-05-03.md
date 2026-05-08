@@ -1,3 +1,11 @@
+> **PARTIALLY SUPERSEDED 2026-05-07 — snapshot only.** The bundle path and native-cache schema named here are out of date:
+>
+> - Bundle path `/Volumes/EricsLLMDrive/jangq-ai/DeepSeek-V4-Flash-JANGTQ2` (line ~39) — current corrected artifact is `/Users/eric/models/JANGQ/DeepSeek-V4-Flash-JANGTQ-V3-F32-MIXED`. The original JANGTQ2 bundle is now hard-rejected by `vmlx_engine/loaders/load_jangtq_dsv4.py::_validate_dsv4_control_tensors`.
+> - Native-cache schema `deepseek_v4_v6` (line ~62) — schema is now `deepseek_v4_v7`. References: `vmlx_engine/server.py:3079`, `vmlx_engine/loaders/dsv4_chat_encoder.py:49`, `vmlx_engine/prefix_cache.py:146`.
+> - "Live API Results / DSV4 Cache / L2 Results" tables (lines ~81-137) — produced against the older bundle/schema; do not cite as a current production gate. Authoritative current contract: `~/wiki/research/topics/dsv4-flash-jangtq.md`.
+>
+> DSV4 is **NOT production-cleared** as of 2026-05-07; long-context tail quality remains the open blocker. Read this doc as a 2026-05-03 snapshot, not as current state.
+
 # DSV4 Python/Electron Audit - 2026-05-03
 
 Scope: Python engine + Electron panel only. Swift work was not used for these fixes.

@@ -361,6 +361,22 @@ JANG test hygiene fixed during this audit:
   `jang_tools/scripts/test_qwen36_python.py` is not executed as a pytest file.
 - Fresh full JANG test roots result: `505 passed, 8 skipped`.
 
+Repo-local packaged app gate:
+
+- Built `panel/release/mac-arm64/vMLX.app` from vMLX `300dbe8b` plus JANG
+  `2be5c5f`.
+- Direct `codesign --deep --sign - vMLX.app` was insufficient: bundled
+  `libpython3.12.dylib` remained unsigned at load time even though app-level
+  strict verify passed.
+- Correct local signing sequence is the one used by `build-and-install.sh`:
+  sign bundled Python Mach-O files first, then seal the `.app`.
+- After signing 499 bundled Python native files and resealing the app,
+  `panel/scripts/release-gate-python-app.py --skip-sleep-wake --skip-gui`
+  passed.
+- The release gate now hashes `turboquant/mpp_nax_kernel.py` in the packaged
+  `jang_tools` tree, so future packages cannot pass with the UI/CLI toggle but
+  without the critical JANG runtime module.
+
 Release boundary:
 
 - Do not commit the vMLX `--jangtq-mpp-nax` UI/CLI/health wiring without the

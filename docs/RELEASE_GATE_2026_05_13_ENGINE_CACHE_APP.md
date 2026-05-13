@@ -145,6 +145,14 @@ Focused `ZAYA1-VL-8B-MXFP4` follow-up:
 - One-shot text exact recall on the same installed app returned
   `CERULEAN 45`.
 - A real blue PNG payload through Chat Completions returned `Blue`.
+- A focused text-memory probe after the bypass fix showed Chat Completions
+  multi-turn recall works for the same bundle in normal cached, skip-cache, and
+  salted forms. All three returned `CERULEAN` and `45`.
+- A focused Responses follow-up showed the supported Responses forms work when
+  the request uses `instructions` or message-list input: both
+  `previous_response_id` chains returned `CERULEAN` and `45`, with cache hits
+  recorded. The earlier plain-string Responses prompt without `instructions`
+  remains a brittle harness row, not evidence of a cache/runtime failure.
 - PP stayed high in the focused rows: about 7.6k to 7.9k prompt tokens/s.
 - Cache mechanics were present in the continuous rows:
   `paged+zaya_cca`, typed `zaya_cca_v1` records, block-disk writes in L2, and
@@ -209,10 +217,10 @@ Installed-app lifecycle gates were rerun after the stream-reset patch:
   Specifically skipped by budget: `Kimi-K2.6-Small-JANGTQ` (~142.6 GB),
   source `DeepSeek-V4-Flash` (~148.7 GB), and `Kimi-K2.6-JANGTQ_K`
   (~328.1 GB).
-- `ZAYA1-VL-8B-MXFP4` remains a text-only review row: cache mechanics and
-  prompt-processing speed are working, image input is working, and one-shot
-  text exact recall is working, but strict multi-turn text recall plus
-  `/v1/responses` READY output were not clean enough to mark as fully cleared.
+- `ZAYA1-VL-8B-MXFP4` remains a harness review row for the exact
+  plain-string `READY` prompt. Cache mechanics, prompt-processing speed, image
+  input, Chat Completions multi-turn text recall, and Responses
+  `instructions`/message-list recall are working in the installed app.
 - The matrix is installed-app API/server evidence. Computer Use could not attach
   to the Electron window because macOS denied the automation event, so visual
   click-through proof is still manual/user-side until that permission is fixed.

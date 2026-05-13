@@ -58,6 +58,13 @@ Additional direct plus paged-L2 rows passed:
 The remaining direct/L2 sweep produced 18/18 passing result files and no
 tracebacks, stream-affinity failures, OOMs, or working-set rejections.
 
+`~/models` coverage was cross-checked against the saved gate artifacts. Every
+local model root at or below the 85 GB single-process budget has at least one
+live installed-app result artifact. Most have direct plus paged-L2 coverage;
+the core families also have all-cache-mode and/or full API-adapter parity
+coverage. The only below-budget root intentionally left as `REVIEW` is
+`ZAYA1-VL-8B-MXFP4` in text-only strict recall mode.
+
 Installed-app API parity passed after the clean rebuild:
 
 - Core families: Qwen3.6-27B JANG_4M, Gemma-4-26B JANG_4M,
@@ -104,6 +111,9 @@ Installed-app media and image gates were rerun after the clean rebuild:
 
 - This gate does not claim Kimi-sized bundles or source-sized DSV4 are locally
   tested; they exceed the current 128 GB machine budget for this pass.
+  Specifically skipped by budget: `Kimi-K2.6-Small-JANGTQ` (~142.6 GB),
+  source `DeepSeek-V4-Flash` (~148.7 GB), and `Kimi-K2.6-JANGTQ_K`
+  (~328.1 GB).
 - `ZAYA1-VL-8B-MXFP4` remains a text-only review row: cache mechanics and
   prompt-processing speed are working, but strict text recall output was not
   clean enough to mark as fully cleared.

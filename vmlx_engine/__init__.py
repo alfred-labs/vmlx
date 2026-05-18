@@ -62,6 +62,41 @@ try:
 except Exception:
     pass
 
+# Override RotatingKVCache.__init__ to honour the VMLX_ROTATING_KV_MAX_TOKENS
+# env var. Reason: Gemma 4 (and other mixed-attention models) create
+# RotatingKVCache(max_size=sliding_window=512), which makes
+# mllm_scheduler._truncate_hybrid_cache() bail with `offset > max_size` on
+# any prompt longer than 512 tokens. That kills every prefix-cache store
+# (no L0 paged insert, no L1 block disk write-through, no L2 prompt store).
+# Enlarging the ring buffer leaves the attention mask untouched (still the
+# trained sliding window), so model output is bit-identical — only the K/V
+# tensor reservation grows.
+try:
+    import os as _os
+    import logging as _l
+    import mlx_lm.models.cache as _cache_mod_rkv
+
+    _rkv_cls = getattr(_cache_mod_rkv, "RotatingKVCache", None)
+    if _rkv_cls is not None and not getattr(_rkv_cls, "_vmlx_rotating_override", False):
+        _orig_rkv_init = _rkv_cls.__init__
+
+        def _patched_rkv_init(self, max_size, keep=0):
+            try:
+                _override = int(_os.environ.get("VMLX_ROTATING_KV_MAX_TOKENS", "0"))
+            except ValueError:
+                _override = 0
+            if _override > max_size:
+                max_size = _override
+            _orig_rkv_init(self, max_size, keep=keep)
+
+        _rkv_cls.__init__ = _patched_rkv_init
+        _rkv_cls._vmlx_rotating_override = True
+        _l.getLogger("vmlx_engine").info(
+            "RotatingKVCache.__init__ override installed (VMLX_ROTATING_KV_MAX_TOKENS)"
+        )
+except Exception:
+    pass
+
 # mlx_vlm registry patches (gemma4 + kimi_k25) — DEFERRED to first VLM
 # load instead of import time. Importing `mlx_vlm.prompt_utils` /
 # `mlx_vlm.utils` transitively pulls in `mlx_vlm.generate` which has

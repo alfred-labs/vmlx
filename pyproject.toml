@@ -44,8 +44,6 @@ dependencies = [
     "pyyaml>=6.0",
     "requests>=2.28.0",
     "tabulate>=0.9.0",
-    # Video processing for VLM (headless — no GUI deps, smaller install)
-    "opencv-python-headless>=4.8.0",
     # Resource monitoring
     "psutil>=5.9.0",
     # Server
@@ -67,39 +65,20 @@ dependencies = [
     # is named `jang` (not `jang-tools` — that's the local repo dir name);
     # `import jang_tools` works because that's the package import name.
     "jang>=2.5.29",
-    # PyTorch — REQUIRED for Nemotron-3-Nano-Omni multimodal dispatch.
-    # `jang_tools.nemotron_omni_chat._import_torch()` lazy-imports torch on
-    # the FIRST image / audio / video request to an Omni bundle; without
-    # it the request 500s with `ModuleNotFoundError: No module named
-    # 'torch'` and the user gets a generic Internal Server Error. Live
-    # audit 2026-04-30 (release-audit.py E1) caught this regression vs
-    # 1.4.3. Wheel install grows ~700 MB but it's the only way to keep
-    # the Omni multimodal path working out of the box.
-    "torch>=2.3.0",
-    "torchvision>=0.18.0",
-    # soundfile — REQUIRED for Stage-2 native MLX Omni audio. Audio
-    # ingestion in `jang_tools.nemotron_omni.model._load_audio` lazy-
-    # imports it on the first audio request; without it Stage-2 audio
-    # 500s with `ModuleNotFoundError: 'soundfile'`. Live audit
-    # 2026-04-30 with --omni-backend stage2 reproduced the gap. Stage-1
-    # uses torchaudio so isn't affected, but every user who flips to
-    # Stage-2 hits it. Promote to hard dep so the JANGQ-AI banner
-    # speed claims (84 tok/s decode, 15-21x faster encoders) are
-    # reachable on a plain `pip install vmlx`. ~3 MB via cffi.
-    "soundfile>=0.12.0",
-    # timm — REQUIRED for Nemotron-3-Nano-Omni media dispatch. The Stage-1
-    # PyTorch bridge loads the RADIO/ViT vision backbone through transformers
-    # remote code, which raises before generation if timm is missing. Live
-    # Nemotron image row on 2026-05-08 reproduced the failure from `uv run`
-    # even though the bundled Python script already installed timm.
-    "timm>=1.0.20",
-    # einops — REQUIRED by the same Nemotron-Omni remote vision modules.
-    # Without it the first image/video request fails after timm is present.
-    "einops>=0.8.0",
-    # librosa — REQUIRED during Nemotron-Omni session construction because the
-    # Parakeet audio feature extractor is initialized with the multimodal
-    # wrapper even when the first request is image-only.
-    "librosa>=0.10.0",
+    # Heavy multimodal stacks (Nemotron-Omni audio + image-gen + benchmark
+    # video I/O) used to live here as hard deps to make `pip install vmlx`
+    # serve every bundle out of the box. The Omni model dispatch in
+    # `jang_tools.nemotron_omni_chat` lazy-imports torch/timm/einops/librosa/
+    # soundfile only on the first multimodal request, image-gen reaches for
+    # mflux only when `/v1/images/generations` is hit, and opencv is only
+    # used by the `vmlx bench` video harness in `vmlx_engine/benchmark.py`.
+    # Embedding deployments that serve text + image VLMs over chat completions
+    # don't exercise any of those paths, so they are gated behind extras:
+    #   vmlx[omni]       — Nemotron-Omni multimodal audio/video runtime
+    #                      (torch, torchvision, soundfile, timm, einops, librosa)
+    #   vmlx[image]      — mflux image generation (Flux, Z-Image, Qwen-Image-Edit)
+    #   vmlx[benchmark]  — opencv video I/O for the `vmlx bench` CLI
+    # `pip install vmlx[omni,image,benchmark]` restores the pre-1.5.41 layout.
 ]
 
 [project.optional-dependencies]
@@ -124,9 +103,31 @@ vllm = [
     # vllm pins torch<=2.6.0 which conflicts with mflux (torch>=2.8.0) when both installed
     "vllm>=0.4.0; python_version < '3.13'",
 ]
-vision = [
+# Nemotron-3-Nano-Omni multimodal runtime. jang_tools lazy-imports torch /
+# torchvision / soundfile / timm / einops / librosa on the first image/audio/
+# video request to an Omni bundle; without these the request 500s with a
+# ModuleNotFoundError. Embedding deployments that don't serve Omni bundles
+# never trigger the load. Wheel adds ~700 MB (torch) + ~350 MB (torchvision)
+# + ~50 MB (audio+vision helpers) plus transitive scipy/numba/llvmlite tail.
+omni = [
     "torch>=2.3.0",
     "torchvision>=0.18.0",
+    "soundfile>=0.12.0",
+    "timm>=1.0.20",
+    "einops>=0.8.0",
+    "librosa>=0.10.0",
+]
+# Legacy alias for the old [vision] extra (torch + torchvision). Kept so
+# `pip install vmlx[vision]` from older docs / requirements files still
+# resolves to the same set, now via [omni].
+vision = [
+    "vmlx[omni]",
+]
+# Video I/O for the `vmlx bench` benchmark CLI. The benchmark module
+# (vmlx_engine/benchmark.py) top-level-imports cv2 for VideoWriter /
+# VideoCapture. Inference (vmlx serve) never reaches that file.
+benchmark = [
+    "opencv-python-headless>=4.8.0",
 ]
 # Audio dependencies for TTS/STT (mlx-audio)
 audio = [

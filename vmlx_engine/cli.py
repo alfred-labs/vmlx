@@ -1214,8 +1214,12 @@ def serve_command(args):
         print()
 
     # Start server
-    print(f"Starting server at http://{args.host}:{args.port}")
-    uvicorn.run(app, host=args.host, port=args.port, log_level=log_level.lower())
+    if args.uds:
+        print(f"Starting server on Unix domain socket {args.uds}")
+        uvicorn.run(app, uds=args.uds, log_level=log_level.lower())
+    else:
+        print(f"Starting server at http://{args.host}:{args.port}")
+        uvicorn.run(app, host=args.host, port=args.port, log_level=log_level.lower())
 
 
 def bench_command(args):
@@ -1752,6 +1756,11 @@ Examples:
     serve_parser.add_argument(
         "--port", type=int, default=8000,
         help="TCP port for the API server (default: 8000). Example: --port 8092",
+    )
+    serve_parser.add_argument(
+        "--uds", type=str, default=None,
+        help="Path to a Unix domain socket to bind instead of host/port. "
+             "When set, --host and --port are ignored. Example: --uds /tmp/vmlx.sock",
     )
     serve_parser.add_argument(
         "--max-num-seqs", type=int, default=1,

@@ -1386,3 +1386,54 @@ Verification:
 
 This is still source/static artifact detection proof. It does not claim live
 output quality for the plain MLX 4-bit row.
+
+## 2026-05-22 06:11 PDT - Ling/Bailing Hybrid Loader Repair Gate Pinned
+
+Extended the no-heavy model-artifact gate so Ling/Bailing hybrid loader repairs
+are required explicitly, not only selected incidentally through broad MXFP/JANG
+patterns.
+
+Required markers:
+
+- `test_sanitize_repairs_flat_2d_switch_mlp_to_3d`
+- `test_sanitize_no_op_on_correct_3d_shape`
+- `test_sanitize_restores_dwq_split_mla_kv_b_proj`
+- `test_sanitize_trims_absent_mtp_layer_before_strict_load`
+
+What this protects:
+
+- older Ling/Bailing MXFP4 artifacts with flat 2D `switch_mlp` tensors are
+  repaired back to 3D before strict load;
+- already-correct JANGTQ 3D `switch_mlp` tensors are left unchanged;
+- DWQ split `embed_q` / `unembed_out` MLA projection tensors are rebuilt into
+  `kv_b_proj`;
+- configs that advertise absent MTP tail layers trim those layers before
+  strict load;
+- the artifact runner selector now explicitly includes `bailing` and
+  `switch_mlp`.
+
+Verification:
+
+- red:
+  `.venv/bin/python -m pytest -q tests/test_model_artifact_format_contract.py`
+  failed until the runner selector explicitly included `bailing`;
+- artifact gate:
+  `.venv/bin/python tests/cross_matrix/run_model_artifact_format_contract.py --out build/current-model-artifact-format-contract-20260522-bailing-loader.json`
+  -> `status=pass`, `missing_markers=[]`, `130 passed`;
+- release manifest:
+  `.venv/bin/python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-bailing-loader.json`
+  -> 18 rows;
+- focused release tests:
+  `.venv/bin/python -m pytest -q tests/test_model_artifact_format_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `62 passed`;
+- py-compile and `git diff --check` -> pass;
+- umbrella:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools .venv/bin/python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-bailing-loader.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
+- release surface:
+  `.venv/bin/python tests/cross_matrix/run_release_surface_contract.py --out build/current-release-surface-contract-20260522-bailing-loader.json`
+  -> `status=pass`.
+
+This is source/static loader repair coverage. It does not claim live output
+quality for Ling/Bailing rows.

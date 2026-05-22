@@ -2447,6 +2447,84 @@ This pins parser/cache/modality policy against real local metadata for the
 formats Eric called out: JANG, JANGTQ/MXTQ, MXFP4, MXFP8, plain MLX 4bit, and
 native-MTP rows. It is not a live generation or speed clearance.
 
+## 2026-05-22 10:39 PDT - Panel Local-Path Detection Matches Engine/API Policy
+
+The new panel local-path guard exposed a real mismatch:
+
+- panel/API already route indexed native-MTP Qwen affine-JANG VL artifacts as
+  multimodal/VLM;
+- the engine registry and decode-speed row still treated
+  `qwen27_jang4m_mtp` as text-only.
+
+Root cause:
+
+- `vmlx_engine.model_config_registry._try_jang_stamp()` kept every affine-JANG
+  Qwen VL-looking bundle on the text-loader guard used for plain affine-JANG
+  M-RoPE safety;
+- it did not exempt indexed native-MTP VL artifacts, even though
+  `tests/test_native_mtp_autodetect.py` already proves those use the VLM path.
+
+Fix:
+
+- added `_is_native_mtp_qwen_vl_artifact_ready()` in the engine registry;
+- plain affine-JANG Qwen VL still stays text-only;
+- indexed native-MTP Qwen VL with real vision and MTP tensors now reports
+  `is_mllm=True`;
+- decode-speed row `qwen27_jang4m_mtp` now emits `--is-mllm`;
+- panel local-path test pins the same policy across actual local DSV4, Qwen,
+  Hy3, and Nemotron paths.
+
+Red:
+
+- panel focused test failed on `qwen27_jang4m_mtp`, expected text-only but
+  detector returned multimodal;
+- engine focused test
+  `test_qwen36_affine_jang_native_mtp_vlm_uses_vlm_loader` failed because the
+  engine registry returned `is_mllm=False`;
+- model-family gate red:
+  `build/current-model-family-detection-contract-20260522-panel-local-paths-red.json`
+  -> missing only `panel_local_high_risk_rows_match_detector_policy`.
+
+Green:
+
+- engine focused guard:
+  `.venv/bin/python -m pytest -q tests/test_model_config_registry.py::TestModelConfigs::test_qwen36_affine_jang_native_mtp_vlm_uses_vlm_loader tests/test_model_config_registry.py::TestModelConfigs::test_qwen36_affine_jang_vlm_stays_text_loader_until_mrope_fixed`
+  -> `2 passed`;
+- panel focused local-path guard:
+  `cd panel && npx vitest run tests/model-config-registry.test.ts --testNamePattern "matches current local high-risk" --reporter=verbose`
+  -> `1 passed / 53 skipped`;
+- combined focused family rows:
+  `.venv/bin/python -m pytest -q tests/test_model_config_registry.py::TestModelConfigs::test_qwen36_affine_jang_native_mtp_vlm_uses_vlm_loader tests/test_model_config_registry.py::TestModelConfigs::test_qwen36_affine_jang_vlm_stays_text_loader_until_mrope_fixed tests/test_model_family_detection_contract.py::test_decode_speed_local_high_risk_rows_match_current_engine_registry tests/test_model_family_detection_contract.py::test_decode_speed_gate_jang_only_rows_keep_text_mx_matmul_launch_policy tests/test_model_family_detection_contract.py::test_decode_speed_gate_artifact_format_coverage_matrix`
+  -> `5 passed`;
+- full model-family gate:
+  `build/current-model-family-detection-contract-20260522-panel-local-paths.json`
+  -> `status=pass`, `failed=[]`, `missing_rows=[]`, engine `43 passed`,
+  panel `42 passed / 12 skipped`, launch wiring `6 passed / 228 skipped`.
+
+This is a real policy alignment fix for native-MTP Qwen VL routing. It does
+not add sampler forcing and does not claim live speed/generation clearance.
+
+Follow-up packaging verification:
+
+- first umbrella run exposed bundled Python drift after
+  `vmlx_engine/model_config_registry.py` changed:
+  `build/current-regression-suite-20260522-panel-local-paths.json`
+  initially failed `packaged_integrity_contracts` and `release_gate_skip_app`;
+- root cause was source/bundle hash mismatch for
+  `vmlx_engine/model_config_registry.py`, not a model/runtime failure;
+- reran `panel/scripts/bundle-python.sh` with clean JANG source:
+  `/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools`;
+- packaged integrity artifact:
+  `build/current-packaged-integrity-contract-20260522-panel-local-paths.json`
+  -> `status=pass`, `failed=[]`;
+- umbrella artifact:
+  `build/current-regression-suite-20260522-panel-local-paths.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly:
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
+The bundled app source is now in parity with this checkout for this hardening
+increment. The remaining DSV4 long-output/code quality row is still open.
+
 ## 2026-05-22 09:05 PDT - Family Gate Requires ZAYA/Hy3/Qwen VL Profile Rows
 
 Strengthened `run_model_family_detection_contract.py` so existing high-risk

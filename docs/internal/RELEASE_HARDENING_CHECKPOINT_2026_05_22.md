@@ -3204,3 +3204,71 @@ Release read:
 - This strengthens the no-heavy model-family compatibility ledger.
 - It does not claim live speed for every row.
 - It does not clear the remaining live DSV4 long-output/code quality row.
+
+## 2026-05-22 15:11 PDT - Defaults, Reasoning Rails, And API Endpoint Assembly Recheck
+
+Scope:
+
+- Rechecked Eric's concern that no fix should secretly force sampler values,
+  repetition floors, reasoning rails, or output caps while we are hardening max
+  output/context, parser, Responses, and tool/cache paths.
+- Updated the release-regression manifest so the durable rows point at current
+  2026-05-22 recheck artifacts for generation defaults, reasoning/template
+  rails, and API endpoint assembly instead of relying only on older artifact
+  names.
+
+Changes:
+
+- `tests/test_release_regression_manifest.py`
+  - added a manifest guard requiring current generation-defaults,
+    reasoning/template, and API-surface recheck artifacts.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - generation defaults row now names the current no-hidden-forcing artifact
+    and explicitly proves bundle `max_new_tokens`, request-scoped output caps,
+    and no hidden sampler/repetition floor behavior;
+  - reasoning/template row now names the current parser-rails artifact and
+    explicitly proves DSV4 requested rails, MiniMax/Ling boundaries, and
+    tool-followup reasoning reset behavior;
+  - API surface row now names the current endpoint-assembly artifact and
+    explicitly proves named server cache/DSV4 parser surfaces plus invalid
+    persisted `maxTokens` omission in panel request builders.
+
+Red:
+
+- `tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_current_defaults_reasoning_api_rechecks`
+  failed until the manifest named the current artifacts and edge-case text.
+
+Green:
+
+- generation defaults:
+  `build/current-generation-defaults-contract-20260522-recheck-no-hidden-forcing.json`
+  -> `status=pass`, `failed=[]`, `missing_markers=[]`, panel `13 passed`,
+  engine `37 passed`;
+- reasoning/template:
+  `build/current-reasoning-template-contract-20260522-recheck-parser-rails.json`
+  -> `status=pass`, `failed=[]`, `missing_markers=[]`, engine `126 passed`,
+  panel `108 passed`;
+- API surface:
+  `build/current-api-surface-contract-20260522-recheck-endpoint-assembly.json`
+  -> `status=pass`, no missing nested checks/markers/panel markers, server API
+  `25 passed`, panel request builders `72 passed`;
+- focused manifest tests:
+  `tests/test_release_regression_manifest.py::{generation_defaults,reasoning_template,api_surface,current_defaults_reasoning_api_rechecks}`
+  -> `4 passed`;
+- release manifest:
+  `build/current-release-regression-manifest-20260522-recheck-defaults-reasoning-api.json`
+  -> `18 rows`;
+- umbrella with fixed JANG source:
+  `build/current-regression-suite-20260522-recheck-defaults-reasoning-api.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly:
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
+Release read:
+
+- Current no-heavy proof now ties together model-owned generation defaults,
+  explicit per-request output caps, reasoning/parser rails, Responses/Chat/API
+  assembly, invalid persisted `maxTokens` omission, and DSV4 tool/cache surface
+  naming.
+- No runtime behavior changed in this slice.
+- DSV4 long-output/code/file-generation quality remains the only open
+  requirement in the umbrella suite.

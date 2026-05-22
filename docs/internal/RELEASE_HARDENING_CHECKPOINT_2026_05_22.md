@@ -1694,3 +1694,53 @@ Verification:
 
 This is no-heavy engine/panel routing coverage. It does not claim live Qwen
 video/VLM output quality.
+
+## 2026-05-22 06:55 PDT - MXFP VLM Loader Quant Mode Pinned
+
+Extended the model-artifact-format gate with a required marker for the MXFP
+VLM loader quantization path.
+
+Required marker:
+
+- `test_mxfp_vlm_loader_quantizes_with_declared_mode`
+
+What it pins:
+
+- Qwen3.6 MXFP4 VLM/MTP bundles pass `mode=mxfp4`, `bits=4`, and
+  `group_size=32` into MLX quantization;
+- Qwen3.6 MXFP8 VLM/MTP bundles pass `mode=mxfp8`, `bits=8`, and
+  `group_size=32` into MLX quantization;
+- VLM loader routing does not silently fall back to affine mode or drift into
+  JANGTQ/TurboQuant handling for MXFP bundles;
+- the release manifest now names this exact row through
+  `build/current-model-artifact-format-contract-20260522-mxfp-vlm-loader.json`.
+
+Verification:
+
+- red:
+  `.venv/bin/python -m pytest -q tests/test_model_artifact_format_contract.py`
+  -> failed before the marker was listed in
+  `REQUIRED_ARTIFACT_TEST_MARKERS`;
+- focused MXFP loader checks:
+  `.venv/bin/python -m pytest -q -vv tests/test_native_mtp_autodetect.py -k "test_mxfp_vlm_loader_quantizes_with_declared_mode or test_jang_quant_mode_supports_mxfp8_metadata or test_uint32_post_load_upgrade_preserves_mxfp8_mode"`
+  -> `4 passed / 67 deselected`;
+- focused release tests:
+  `.venv/bin/python -m pytest -q tests/test_model_artifact_format_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `63 passed`;
+- py-compile and `git diff --check` -> pass;
+- artifact gate:
+  `.venv/bin/python tests/cross_matrix/run_model_artifact_format_contract.py --out build/current-model-artifact-format-contract-20260522-mxfp-vlm-loader.json`
+  -> `status=pass`, `missing_markers=[]`, `131 passed`;
+- release manifest:
+  `.venv/bin/python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-mxfp-vlm-loader.json`
+  -> 18 rows;
+- umbrella:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools .venv/bin/python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-mxfp-vlm-loader.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
+- release surface:
+  `.venv/bin/python tests/cross_matrix/run_release_surface_contract.py --out build/current-release-surface-contract-20260522-mxfp-vlm-loader.json`
+  -> `status=pass`.
+
+This is no-heavy loader/artifact coverage. It does not claim live Qwen VLM
+output quality.

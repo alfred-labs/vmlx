@@ -127,6 +127,7 @@ Key artifacts:
 - `build/current-release-surface-contract-20260522-post-concrete-artifacts.json`
 - `build/current-max-output-context-contract-20260522-new-chat-max-output.json`
 - `build/current-regression-suite-20260522-new-chat-max-output.json`
+- `build/current-release-surface-contract-20260522-post-new-chat-max-output.json`
 
 ## Latest Verification
 
@@ -175,7 +176,7 @@ uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py \
   --out build/current-regression-suite-20260522-concrete-artifacts.json
 
 uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
-  --out build/current-release-surface-contract-20260522-post-concrete-artifacts.json
+  --out build/current-release-surface-contract-20260522-post-new-chat-max-output.json
 ```
 
 Observed results:
@@ -207,6 +208,7 @@ Observed results:
   `55 passed`;
 - umbrella suite after new-chat guard: `status=pass`, `failed_steps=[]`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
+- release surface contract after pushing `cdb7d0f0`: `status=pass`;
 - release surface contract after pushing `177b9cd4`: `status=pass`;
 - public updater primary/fallback remain `1.5.46`, PyPI `vmlx` remains
   `1.5.46`, and GitHub `jjang-ai/vmlx` release `v1.5.47` is not published;

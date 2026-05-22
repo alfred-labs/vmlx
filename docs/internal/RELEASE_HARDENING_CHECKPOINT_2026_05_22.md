@@ -3273,6 +3273,65 @@ Release read:
 - DSV4 long-output/code/file-generation quality remains the only open
   requirement in the umbrella suite.
 
+## 2026-05-22 15:28 PDT - Packaged Integrity Recheck Pinned
+
+Scope:
+
+- Rechecked packaged-runtime integrity after the DSV4 materialized-pool JANG
+  fix and the v1.5.48 local release prep work.
+- This specifically guards against calling DSV4 pool/prefix behavior fixed in
+  source while the bundled Python app still imports stale `jang_tools`.
+
+Changes:
+
+- `tests/test_release_regression_manifest.py`
+  - added a guard requiring the current packaged-integrity artifact and the
+    clean JANG source path used for source-hash parity.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - packaged-release-integrity now names
+    `build/current-packaged-integrity-contract-20260522-recheck-bundled-release-gate.json`;
+  - the row explicitly proves clean JANG source parity, critical bundled
+    `jang_tools` file hash parity, relocatable console-script shebangs, and
+    dry release-gate failure only on the known DSV4 objective row.
+
+Red:
+
+- `tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_current_packaged_integrity_recheck`
+  failed until the manifest named the current packaged-integrity artifact and
+  bundled-source edge cases.
+
+Green:
+
+- packaged integrity:
+  `build/current-packaged-integrity-contract-20260522-recheck-bundled-release-gate.json`
+  -> `status=pass`, `failed=[]`;
+- packaged subchecks:
+  - release gate unit contracts: `36 passed`;
+  - bundled Python verifier: `rc=0`;
+  - dry release gate with app build skipped: expected `rc=1` because the only
+    open requirement is DSV4 long-output/code/file-generation quality;
+- release manifest:
+  `build/current-release-regression-manifest-20260522-recheck-packaged-integrity.json`
+  -> `18 rows`;
+- focused tests:
+  `tests/test_release_regression_manifest.py::{packaged_integrity_with_runner_artifact,current_packaged_integrity_recheck}` plus
+  `tests/test_packaged_integrity_contract.py`
+  -> `4 passed`;
+- umbrella with fixed JANG source:
+  `build/current-regression-suite-20260522-recheck-packaged-integrity.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly:
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
+Release read:
+
+- DSV4 native prefix/paged/L2 plus pool quant has source, panel/env, live
+  pool-on tool-loop, and packaged-source-parity coverage.
+- Default app policy remains conservative: DSV4 native composite prefix cache
+  is diagnostic/opt-in, and DSV4 pool quant defaults off unless explicitly
+  enabled.
+- This does not clear the separate DSV4 long-output/code/file-generation
+  quality row.
+
 ## 2026-05-22 15:16 PDT - MCP And VL/Media Recheck Pinned
 
 Scope:

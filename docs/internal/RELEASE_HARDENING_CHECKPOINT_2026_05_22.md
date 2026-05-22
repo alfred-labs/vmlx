@@ -1006,6 +1006,69 @@ Green proof:
   -> `status=pass`, `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`.
 
+## 2026-05-22 05:16 PDT - Config-Only Native MTP Suppression Guard
+
+Pinned the native-MTP edge where a bundle name or config advertises MTP but the
+actual safetensor index has no `mtp.*` tensors:
+
+- Engine runtime status must not activate native MTP from config alone.
+- Panel model detection must not expose Native MTP launch controls from config
+  alone.
+- For affine-JANG Qwen VL, config-only MTP keeps the existing text-only safety
+  route; indexed MTP plus vision tensors is the path that can opt into the
+  native-MTP VL route.
+
+Red proof:
+
+- `uv run --extra dev python tests/cross_matrix/run_native_mtp_contract.py --out build/current-native-mtp-contract-20260522-config-only-red.json`
+  failed with missing markers:
+  - `test_config_only_mtp_bundle_does_not_activate_native_runtime`
+  - `does not expose Native MTP for config-only bundles without indexed mtp tensors`
+
+Fix:
+
+- `tests/test_native_mtp_autodetect.py`
+  - added
+    `test_config_only_mtp_bundle_does_not_activate_native_runtime`;
+  - asserts config MTP layers plus no indexed `mtp.*` tensors yields
+    `metadata_inconsistent`, no artifact availability, no runtime availability,
+    no runtime active state, and no effective depth.
+- `panel/tests/model-config-registry.test.ts`
+  - added
+    `does not expose Native MTP for config-only bundles without indexed mtp tensors`;
+  - asserts the panel keeps that Qwen affine-JANG VL case text-only and leaves
+    `nativeMtp` undefined.
+- `tests/cross_matrix/run_native_mtp_contract.py`
+  - now requires both markers and runs panel model-config MTP detection rows.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - native-MTP row now records config-only MTP suppression and points at
+    `build/current-native-mtp-contract-20260522-config-only.json`.
+
+Green proof:
+
+- focused engine marker:
+  `uv run --extra dev python -m pytest -q tests/test_native_mtp_autodetect.py::TestNativeMtpAutodetect::test_config_only_mtp_bundle_does_not_activate_native_runtime`
+  -> `1 passed`;
+- focused panel marker:
+  `cd panel && npx vitest run tests/model-config-registry.test.ts --testNamePattern "does not expose Native MTP for config-only" --reporter=verbose`
+  -> `1 passed / 52 skipped`;
+- native-MTP contract:
+  `uv run --extra dev python tests/cross_matrix/run_native_mtp_contract.py --out build/current-native-mtp-contract-20260522-config-only.json`
+  -> `status=pass`, `missing_markers=[]`, engine `116 passed`,
+  panel controls `12 passed / 221 skipped`, panel detection
+  `6 passed / 47 skipped`;
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-native-mtp-config-only.json`
+  -> 18 rows;
+- focused pytest:
+  `uv run --extra dev python -m pytest -q tests/test_native_mtp_autodetect.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `131 passed`;
+- py-compile and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-native-mtp-config-only.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

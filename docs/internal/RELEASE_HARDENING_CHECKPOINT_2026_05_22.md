@@ -3136,3 +3136,30 @@ Release read:
   ZAYA, Ling, Nemotron, parser/modality launch policy, and API
   output/context boundaries.
 - This does not clear the remaining live DSV4 long-output/code quality row.
+
+## 2026-05-22 15:08 PDT - Parser And Tool Parity Recheck
+
+Scope:
+
+- Rechecked the prior MiniMax-style failure mode where panel auto-detection
+  emitted a parser value the engine CLI did not accept.
+- Rechecked DSV4 DSML parser repair/residue rejection because the DSV4 tool
+  loop issue sits next to parser registry and Responses/tool-call assembly.
+
+Evidence:
+
+- `build/current-parser-registry-contract-20260522-recheck-parser-parity.json`
+  -> `status=pass`, `failed=[]`, `missing_markers=[]`;
+  - engine parser registry: `121 passed`;
+  - panel parser registry/dropdown/launch parity: `41 passed`.
+- `build/current-tool-call-contract-20260522-recheck-parser-dsv4.json`
+  -> `status=pass`, `failed=[]`, `missing_markers=[]`;
+  - DSV4 DSML/tool parser contracts: `22 passed`;
+  - panel tool-loop/security contracts: `11 passed`.
+
+Release read:
+
+- Panel-emitted reasoning/tool parsers remain registered and CLI-accepted by
+  the engine at no-heavy contract level.
+- DSV4 DSML repair/residue rejection remains green at no-heavy contract level.
+- This does not clear the remaining live DSV4 long-output/code quality row.

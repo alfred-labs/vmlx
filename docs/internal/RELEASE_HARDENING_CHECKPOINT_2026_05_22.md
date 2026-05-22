@@ -625,6 +625,61 @@ Green proof:
   `build/current-release-surface-contract-20260522-post-ollama-malformed.json`
   -> `status=pass`, with updater/source consistency checks green.
 
+## 2026-05-22 04:15 PDT - Ollama Context Malformed Prompt-Cap Guard
+
+Closed the paired panel API-gateway edge for prompt/context caps:
+
+- Ollama `options.num_ctx`, `options.max_context_tokens`, and related context
+  aliases map to OpenAI `max_prompt_tokens`.
+- Valid positive values remain prompt/context caps.
+- Malformed, non-finite, `0`, negative, or unset values must not become a
+  poisoned `max_prompt_tokens` value at the OpenAI backend boundary.
+
+Red proof:
+
+- `uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py --out build/current-max-output-context-contract-20260522-ollama-context-malformed-red.json`
+- result: `status=fail`, `failed=[]`,
+  `missing_markers=["omits malformed Ollama context values instead of poisoning max_prompt_tokens"]`;
+  existing engine and panel output/context commands stayed green.
+
+Fix:
+
+- `panel/src/main/api-gateway.ts`
+  - `applyOllamaPromptContextLimit(...)` now forwards only finite positive
+    values;
+  - forwarded values are normalized with `Math.floor(parsedValue)`;
+  - malformed strings like `"not-a-number"` and non-finite strings like
+    `"Infinity"` are omitted.
+
+Green proof:
+
+- focused panel test:
+  `cd panel && npx vitest run tests/api-gateway-ollama-behavior.test.ts --testNamePattern "malformed Ollama context" --reporter=verbose`
+  -> `1 passed / 2 skipped`;
+- max-output/context contract:
+  `uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py --out build/current-max-output-context-contract-20260522-ollama-context-malformed.json`
+  -> `status=pass`, `missing_markers=[]`, engine `20 passed`, panel
+  `35 passed / 290 skipped`;
+- API surface contract:
+  `uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py --out build/current-api-surface-contract-20260522-ollama-context-malformed.json`
+  -> `status=pass`, `missing_nested_checks=[]`,
+  `missing_nested_markers=[]`, `missing_panel_markers=[]`, server API surface
+  `21 passed`, panel request builders `66 passed`;
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-ollama-context-malformed.json`
+  -> 18 rows;
+- focused API/manifest/current-suite tests:
+  `uv run --extra dev python -m pytest -q tests/test_api_surface_contract.py::test_api_surface_contract_pins_named_public_surface_edges tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `61 passed`;
+- full gateway behavior test:
+  `cd panel && npx vitest run tests/api-gateway-ollama-behavior.test.ts --reporter=verbose`
+  -> `3 passed`;
+- py-compile for changed Python runners and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-ollama-context-malformed.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

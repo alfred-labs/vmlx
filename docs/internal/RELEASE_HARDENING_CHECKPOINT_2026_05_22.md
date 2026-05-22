@@ -275,6 +275,20 @@ uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py \
 
 uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
   --out build/current-release-regression-manifest-20260522-anthropic-streaming.json
+
+uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
+  --out build/current-max-output-context-contract-20260522-ollama-streaming.json
+
+uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py \
+  --out build/current-api-surface-contract-20260522-ollama-streaming.json
+
+uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
+  --out build/current-release-regression-manifest-20260522-ollama-streaming.json
+
+VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
+VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
+uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py \
+  --out build/current-regression-suite-20260522-ollama-streaming.json
 ```
 
 Observed results:
@@ -390,6 +404,25 @@ Observed results:
 - focused streaming Anthropic/API/manifest/current-suite tests: `64 passed`;
 - umbrella suite after streaming Anthropic Messages guard: `status=pass`,
   `failed_steps=[]`;
+- red proof for streaming Ollama `num_predict`:
+  `build/current-max-output-context-contract-20260522-ollama-streaming-red.json`
+  failed because the new marker was required but not yet present in the max-output
+  command list;
+- focused streaming Ollama route test:
+  `test_ollama_streaming_num_predict_overrides_server_default_without_touching_context_cap`
+  passed;
+- max-output gate after streaming Ollama guard: `status=pass`,
+  `missing_markers=[]`, engine `19 passed`, panel `34 passed / 1 skipped`;
+- API surface after streaming Ollama guard: `status=pass`,
+  `missing_nested_checks=[]`, `missing_nested_markers=[]`,
+  `missing_panel_markers=[]`, server API surface `20 passed`, panel request
+  builders `64 passed`;
+- release manifest artifact after streaming Ollama guard: 18 rows;
+- focused streaming Ollama/API/manifest/current-suite tests: `64 passed`;
+- py-compile and `git diff --check` after streaming Ollama guard: pass;
+- umbrella suite after streaming Ollama guard: `status=pass`,
+  `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract after pushing `cdb7d0f0`: `status=pass`;
 - release surface contract after pushing `177b9cd4`: `status=pass`;

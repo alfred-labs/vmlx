@@ -2895,3 +2895,55 @@ Remaining limitation:
 - This clears DSV4 default-cache/pool-on multi-tool execution and the pool-on
   speed regression. It does not clear the separate DSV4 long-output/code/file
   generation quality row.
+
+## 2026-05-22 14:02 PDT - DSV4 Pool Quant App/UI Toggle Wired
+
+Root-cause follow-up:
+
+- The JANG materialized-pool fix made `DSV4_POOL_QUANT=1` viable again, but the
+  panel still forced explicit `dsv4PoolQuant=true` to `DSV4_POOL_QUANT=0`.
+- The settings UI also still displayed DSV4 Pool Quantization as a disabled,
+  rejected option with stale full-pool dequant/concat language.
+
+Changes:
+
+- `dsv4EnvFromConfig()` now emits `DSV4_POOL_QUANT=1` only when
+  `config.dsv4PoolQuant === true`.
+- DSV4 family startup defaults initialize missing pool quant to false but
+  preserve explicit true.
+- The UI toggle is enabled and documents the materialized CSA/HCA pool reuse
+  path.
+- Generic TurboQuant KV remains suppressed for DSV4 native composite cache.
+- No sampler, repetition, max-output, cache, or behavior forcing was added.
+
+Red:
+
+- `panel/tests/dsv4-env.test.ts` and `panel/tests/settings-flow.test.ts`
+  failed because explicit pool quant still mapped to `0`, the UI was disabled,
+  and sessions still cleared explicit true.
+- `tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_cache_architecture_with_runner_artifact`
+  failed until the release manifest named the new explicit app-wiring proof.
+
+Green:
+
+- panel focused tests:
+  `npx vitest run tests/dsv4-env.test.ts tests/settings-flow.test.ts --reporter=verbose -t 'Dsv4Env|DSV4|deepseek-v4 family defaults'`
+  -> `21 passed`;
+- `tests/test_cache_architecture_contract.py` -> `2 passed`;
+- cache architecture:
+  `build/current-cache-architecture-contract-20260522-dsv4-pool-ui-wired.json`
+  -> `status=pass`, cache-family `109 passed`, panel `88 passed`;
+- release manifest:
+  `build/current-release-regression-manifest-20260522-dsv4-pool-ui-wired.json`
+  -> `18 rows`;
+- umbrella:
+  `build/current-regression-suite-20260522-dsv4-pool-ui-wired.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly:
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
+Release read:
+
+- DSV4 native prefix/paged/L2 plus pool quant now has both runtime
+  materialized-pool proof and app/UI env proof.
+- The remaining release blocker is still the separate DSV4 long-output/code/file
+  generation quality row.

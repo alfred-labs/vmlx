@@ -1122,6 +1122,67 @@ Green proof:
   -> `status=pass`, `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`.
 
+## 2026-05-22 05:37 PDT - Chat/Responses Streaming Cache Detail Usage Gate
+
+Pinned the API-surface edge Eric called out around cache responses endpoint
+visibility:
+
+- Chat Completions streaming usage must preserve `cached_tokens` and
+  `cache_detail`.
+- Responses API streaming usage must preserve `cached_tokens` and
+  `cache_detail`.
+- Finish chunks must carry the same cache-detail label that non-streaming
+  usage already exposes, so UI/API clients can distinguish `paged+dsv4`,
+  `paged+zaya_cca`, `paged+ssm+disk`, `disk+tq`, and related typed cache
+  paths.
+
+Red proof:
+
+- `uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py --out build/current-api-surface-contract-20260522-stream-cache-detail-red.json`
+  failed with nested missing markers:
+  - `test_chat_stream_tracks_cache_detail_alongside_cached_tokens`
+  - `test_chat_stream_finish_chunks_emit_cache_detail`
+  - `test_responses_stream_tracks_cache_detail_alongside_cached`
+  - `test_responses_stream_finish_emits_cache_detail`
+- panel request builders stayed green during the red check.
+
+Fix:
+
+- `tests/cross_matrix/run_noheavy_api_cache_contract.py`
+  - now requires and runs the four streaming cache-detail tests;
+  - added the named check `streaming_cache_detail_usage`.
+- `tests/cross_matrix/run_api_surface_contract.py`
+  - now requires the nested `streaming_cache_detail_usage` check;
+  - added the top-level check
+    `chat_and_responses_streaming_cache_detail_usage`.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - API surface row now points at
+    `build/current-api-surface-contract-20260522-stream-cache-detail.json`;
+  - manifest text explicitly records streaming `cache_detail` propagation for
+    Chat Completions and Responses.
+
+Green proof:
+
+- API surface contract:
+  `uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py --out build/current-api-surface-contract-20260522-stream-cache-detail.json`
+  -> `status=pass`, `missing_nested_checks=[]`,
+  `missing_nested_markers=[]`, `server_api_surface` `25 passed`, panel request
+  builders `67 passed`;
+- focused API surface contract tests:
+  `uv run --extra dev python -m pytest -q tests/test_api_surface_contract.py`
+  -> `3 passed`.
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-stream-cache-detail.json`
+  -> 18 rows;
+- focused API/manifest/current-suite tests:
+  `uv run --extra dev python -m pytest -q tests/test_api_surface_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `63 passed`;
+- py-compile for changed Python runners and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-stream-cache-detail.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

@@ -1744,3 +1744,48 @@ Verification:
 
 This is no-heavy loader/artifact coverage. It does not claim live Qwen VLM
 output quality.
+
+## 2026-05-22 07:02 PDT - Affine JANG Loader Acceptance Pinned
+
+Extended the model-artifact-format gate with a required marker for generic
+affine JANG loader acceptance.
+
+Required marker:
+
+- `test_load_jang_model_accepts_affine_weight_format`
+
+What it pins:
+
+- a bundle with `jang_config.json` declaring `weight_format=affine` continues
+  through `load_jang_model`;
+- the loader does not reject that artifact shape or accidentally route it as
+  JANGTQ/MXTQ, MXFP, or plain MLX;
+- this complements the existing JANGTQ mixed-bit, MXFP4/8, Bailing/Ling, and
+  plain MLX 4-bit rows.
+
+Verification:
+
+- red:
+  `.venv/bin/python -m pytest -q tests/test_model_artifact_format_contract.py`
+  -> failed before the marker was listed in
+  `REQUIRED_ARTIFACT_TEST_MARKERS`;
+- focused release tests:
+  `.venv/bin/python -m pytest -q tests/test_model_artifact_format_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `64 passed`;
+- py-compile and `git diff --check` -> pass;
+- artifact gate:
+  `.venv/bin/python tests/cross_matrix/run_model_artifact_format_contract.py --out build/current-model-artifact-format-contract-20260522-affine-jang-loader.json`
+  -> `status=pass`, `missing_markers=[]`, `131 passed`;
+- release manifest:
+  `.venv/bin/python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-affine-jang-loader.json`
+  -> 18 rows;
+- umbrella:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools .venv/bin/python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-affine-jang-loader.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
+- release surface:
+  `.venv/bin/python tests/cross_matrix/run_release_surface_contract.py --out build/current-release-surface-contract-20260522-affine-jang-loader.json`
+  -> `status=pass`.
+
+This is no-heavy loader/artifact coverage. It does not claim live affine-JANG
+model output quality.

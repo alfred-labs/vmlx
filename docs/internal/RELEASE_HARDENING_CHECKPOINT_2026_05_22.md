@@ -1837,3 +1837,63 @@ Verification:
 
 This is no-heavy registry/family-policy coverage. It does not claim live ZAYA
 output quality.
+
+## 2026-05-22 07:17 PDT - Qwen/Nemotron Hybrid Cache Rows Pinned
+
+Extended the model-family-detection gate with required engine-side rows for
+Qwen and Nemotron hybrid-cache classification that were previously present as
+individual tests but not mandatory release rows.
+
+Required rows:
+
+- `nemotron_h_registry_hybrid_cache`
+- `qwen36_dense_linear_attention_hybrid_cache`
+- `qwen36_moe_text_linear_attention_hybrid_cache`
+
+Required markers:
+
+- `test_nemotron_hybrid_cache`
+- `test_nemotron_h_v2_config`
+- `test_qwen3_5_linear_attention_config_uses_hybrid_cache`
+- `test_qwen3_5_moe_text_linear_attention_uses_hybrid_cache`
+
+What it pins:
+
+- Qwen dense linear-attention wrappers keep `cache_type=hybrid` through the
+  engine registry, not only through panel matching;
+- Qwen MoE text linear-attention wrappers keep `cache_type=hybrid` through the
+  engine registry;
+- base Nemotron-H/Nemotron-H-v2 registry rows stay hybrid before stale Omni
+  sidecar handling is considered;
+- the release manifest now points at the new family artifact instead of an
+  older ZAYA-only checkpoint.
+
+Verification:
+
+- red:
+  `.venv/bin/python -m pytest -q tests/test_model_family_detection_contract.py::test_family_detection_contract_pins_named_release_rows`
+  -> failed before the required rows existed;
+- red:
+  `.venv/bin/python -m pytest -q tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_qwen_nemotron_hybrid_cache_rows`
+  -> failed before the release manifest referenced this checkpoint;
+- focused release tests:
+  `.venv/bin/python -m pytest -q tests/test_model_family_detection_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `88 passed`;
+- py-compile and `git diff --check` -> pass;
+- family gate:
+  `.venv/bin/python tests/cross_matrix/run_model_family_detection_contract.py --out build/current-model-family-detection-contract-20260522-qwen-nemotron-hybrid-cache.json`
+  -> `status=pass`, `missing_rows=[]`, engine `41 passed / 111 deselected`,
+  panel `41 passed / 12 skipped`;
+- release manifest:
+  `.venv/bin/python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-qwen-nemotron-hybrid-cache.json`
+  -> 18 rows;
+- umbrella:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools .venv/bin/python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-qwen-nemotron-hybrid-cache.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
+- release surface:
+  `.venv/bin/python tests/cross_matrix/run_release_surface_contract.py --out build/current-release-surface-contract-20260522-qwen-nemotron-hybrid-cache.json`
+  -> `status=pass`.
+
+This is no-heavy registry/family-policy coverage. It does not claim live Qwen
+or Nemotron output quality. No release build/signing started.

@@ -684,6 +684,67 @@ Green proof:
   `build/current-release-surface-contract-20260522-post-ollama-context-malformed.json`
   -> `status=pass`, with updater/source consistency checks green.
 
+## 2026-05-22 04:24 PDT - External Nemotron 3 Speed Row Guard
+
+Closed a no-heavy model-family coverage gap in the decode-speed matrix:
+
+- `nemotron3_jangtq2_ext` already existed in
+  `tests/cross_matrix/run_decode_speed_gate.py` for
+  `/Volumes/EricsLLMDrive/jangq-ai/Nemotron-3-Nano-Omni-30B-A3B-JANGTQ2`;
+- `nemotron3_mxfp4_ext` already existed for
+  `/Volumes/EricsLLMDrive/jangq-ai/Nemotron-3-Nano-Omni-30B-A3B-MXFP4`;
+- the release family contract did not name those rows directly, so a future
+  edit could remove their parser/modality/startup-command coverage without the
+  named release gate noticing.
+
+Red proof:
+
+- `uv run --extra dev python tests/cross_matrix/run_model_family_detection_contract.py --out build/current-model-family-detection-contract-20260522-nemotron3-external-red.json`
+- result: `status=fail`, `failed=[]`,
+  `missing_rows=["decode_speed_external_nemotron3_jangtq_mxfp_rows"]`;
+  engine family detection and panel family detection were otherwise green.
+
+Fix:
+
+- `tests/cross_matrix/run_model_family_detection_contract.py`
+  - added required row
+    `decode_speed_external_nemotron3_jangtq_mxfp_rows`;
+  - marker points at
+    `test_decode_speed_gate_has_external_nemotron3_jangtq_mxfp_rows`.
+- `tests/test_model_family_detection_contract.py`
+  - pins both external Nemotron 3 paths;
+  - proves JANGTQ2 vs MXFP4 format separation;
+  - proves `tool_parser="nemotron"` and
+    `reasoning_parser="deepseek_r1"`;
+  - proves no `--max-tokens` is added to speed launch commands;
+  - proves no `--is-mllm` flag is added for these text rows.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - model-family row now points at
+    `build/current-model-family-detection-contract-20260522-nemotron3-external.json`;
+  - manifest text explicitly records external Nemotron 3 JANGTQ2/MXFP4 parser
+    and reasoning launch policy coverage.
+
+Green proof:
+
+- focused family test:
+  `uv run --extra dev python -m pytest -q tests/test_model_family_detection_contract.py::test_decode_speed_gate_has_external_nemotron3_jangtq_mxfp_rows tests/test_model_family_detection_contract.py::test_family_detection_contract_pins_named_release_rows`
+  -> `2 passed`;
+- full model-family contract:
+  `uv run --extra dev python tests/cross_matrix/run_model_family_detection_contract.py --out build/current-model-family-detection-contract-20260522-nemotron3-external.json`
+  -> `status=pass`, `missing_rows=[]`, engine `38 passed`, panel
+  `40 passed / 12 skipped`;
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-nemotron3-external.json`
+  -> 18 rows;
+- focused family/manifest/current-suite tests:
+  `uv run --extra dev python -m pytest -q tests/test_model_family_detection_contract.py::test_decode_speed_gate_has_external_nemotron3_jangtq_mxfp_rows tests/test_model_family_detection_contract.py::test_family_detection_contract_pins_named_release_rows tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `62 passed`;
+- py-compile for changed Python runners and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-nemotron3-external.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

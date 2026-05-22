@@ -243,6 +243,9 @@ uv run --extra dev python tests/cross_matrix/run_model_family_detection_contract
 uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
   --out build/current-release-regression-manifest-20260522-command-policy.json
 
+uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
+  --out build/current-release-surface-contract-20260522-post-command-policy.json
+
 uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
   --out build/current-release-regression-manifest-20260522-artifact-format-matrix.json
 
@@ -405,6 +408,8 @@ Observed results:
 - umbrella suite after command policy guard: `status=pass`,
   `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`;
+- pushed `f7f852ea test: pin decode speed command policy` to `origin/main`;
+- release surface contract after pushing `f7f852ea`: `status=pass`;
 - max-output gate after legacy `/v1/completions` output-cap guard:
   `status=pass`, `missing_markers=[]`, engine `15 passed`, panel
   `34 passed / 1 skipped`;

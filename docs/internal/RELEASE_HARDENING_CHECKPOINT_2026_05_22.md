@@ -2779,3 +2779,47 @@ Release read:
 - DSV4 native prefix/paged/L2 can remain a diagnostic opt-in path with pool
   quant off, but DSML tool syntax/file-write quality and DSV4 long-output/code
   quality are still separate open rows.
+
+## 2026-05-22 13:31 PDT - Max Output/Context Proof Hashes API Gateway + DSV4 Budget Paths
+
+Scope:
+
+- Eric asked again to make sure server default max output, chat max output,
+  Responses/Chat/API request output caps, context caps, gateway adapters, DSV4
+  request budgeting, and UI settings cannot conflict or regress separately.
+- This checkpoint adds proof coverage only. It does not change runtime defaults
+  and does not introduce hidden sampler, repetition, cache, or max-token
+  forcing.
+
+Changes:
+
+- `run_max_output_context_contract.py` now source-hashes:
+  - `panel/src/main/api-gateway.ts`;
+  - `panel/src/shared/dsv4RequestBudget.ts`;
+  - `panel/tests/chat-settings-compatibility.test.ts`.
+- `test_max_output_context_contract.py` requires those files so the public API
+  gateway and DSV4 request budget stay in the max-output/context boundary gate.
+- Release manifest now names:
+  - `API gateway output-budget and context-budget paths are source-hashed`;
+  - `DSV4 request-budget helper is source-hashed with the max-output boundary gate`;
+  - `build/current-max-output-context-contract-20260522-gateway-dsv4-budget-hash.json`.
+
+Red:
+
+- `tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_server_chat_max_output_boundary`
+  failed until the new proof text and artifact were added to the manifest.
+
+Green:
+
+- max-output/context gate:
+  `build/current-max-output-context-contract-20260522-gateway-dsv4-budget-hash.json`
+  -> `status=pass`, `failed=[]`, `missing_markers=[]`, engine/API
+  `22 passed`, panel output/context wiring `43 passed`;
+- focused contract/manifest tests -> `2 passed`;
+- release manifest:
+  `build/current-release-regression-manifest-20260522-gateway-dsv4-budget-hash.json`
+  -> `18 rows`;
+- umbrella suite:
+  `build/current-regression-suite-20260522-gateway-dsv4-budget-hash.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly:
+  `DSV4 long-output/code/file-generation quality is release-cleared`.

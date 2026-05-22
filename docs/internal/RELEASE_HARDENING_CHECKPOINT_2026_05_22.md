@@ -1897,3 +1897,59 @@ Verification:
 
 This is no-heavy registry/family-policy coverage. It does not claim live Qwen
 or Nemotron output quality. No release build/signing started.
+
+## 2026-05-22 07:27 PDT - New-Chat Output Cap Non-Stickiness Pinned
+
+Tightened the max-output/max-context contract so the artifact has a named
+check for the exact compatibility concern: per-chat output caps must not become
+server startup defaults, inherited new-chat caps, or sticky model defaults.
+
+New named check:
+
+- `new_chat_output_caps_are_not_inherited_or_made_sticky`
+
+Required markers behind that check:
+
+- `default profiles cannot make maxTokens sticky on clean new chats`
+- `new chats preserve model-owned maxTokens while refusing inherited output caps`
+- `chat maxTokens save path cannot mutate session startup maxTokens`
+
+What it pins:
+
+- per-chat `maxTokens` remains a request override;
+- default profiles cannot copy stale `maxTokens` into a clean new chat;
+- same-model new chats preserve model-owned startup defaults while refusing
+  inherited output caps;
+- the chat override save path cannot mutate session startup `maxTokens`;
+- the release manifest now points at the new max-output artifact instead of an
+  older checkpoint.
+
+Verification:
+
+- red:
+  `.venv/bin/python -m pytest -q tests/test_max_output_context_contract.py::test_max_output_context_contract_covers_all_public_api_surfaces`
+  -> failed before the named check existed;
+- red:
+  `.venv/bin/python -m pytest -q tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_server_chat_max_output_boundary`
+  -> failed before the release manifest referenced this checkpoint;
+- max-output gate:
+  `.venv/bin/python tests/cross_matrix/run_max_output_context_contract.py --out build/current-max-output-context-contract-20260522-new-chat-output-cap-nonsticky.json`
+  -> `status=pass`, `missing_markers=[]`, engine `20 passed`, panel
+  `38 passed / 292 skipped`;
+- focused release tests:
+  `.venv/bin/python -m pytest -q tests/test_max_output_context_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `66 passed`;
+- py-compile and `git diff --check` -> pass;
+- release manifest:
+  `.venv/bin/python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-new-chat-output-cap-nonsticky.json`
+  -> 18 rows;
+- umbrella:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools .venv/bin/python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-new-chat-output-cap-nonsticky.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
+- release surface:
+  `.venv/bin/python tests/cross_matrix/run_release_surface_contract.py --out build/current-release-surface-contract-20260522-new-chat-output-cap-nonsticky.json`
+  -> `status=pass`.
+
+This is no-heavy UI/API/server wiring coverage. It does not claim live DSV4
+quality clearance. No release build/signing started.

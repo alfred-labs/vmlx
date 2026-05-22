@@ -1589,3 +1589,55 @@ Verification:
 
 This is no-heavy request-builder/API-contract coverage. It does not claim live
 model output quality.
+
+## 2026-05-22 06:39 PDT - Reasoning Parser CLI Choice Parity Pinned
+
+Extended the parser registry gate with the reasoning-parser equivalent of the
+existing tool-parser CLI choice guard. This targets the MiniMax class of
+regression where panel/family autodetection emits a parser id that the packaged
+engine CLI rejects before the model can start.
+
+Required engine marker:
+
+- `test_cli_reasoning_parser_choices_cover_family_registry_parsers`
+
+What it pins:
+
+- every `reasoning_parser` emitted by registered model families is present in
+  the runtime reasoning parser registry used by CLI choices;
+- `serve --reasoning-parser` builds choices from `list_parsers()` plus
+  `auto`/`none`;
+- `minimax_m2` stays CLI-selectable for MiniMax M2/M2.7 sessions;
+- this sits beside the existing tool-parser CLI parity guard for DSML, ZAYA,
+  Hy3/Hunyuan, Gemma, MiniMax, Nemotron, and other parser families.
+
+Verification:
+
+- red:
+  `.venv/bin/python tests/cross_matrix/run_parser_registry_contract.py --out build/current-parser-registry-contract-20260522-reasoning-cli-red.json`
+  -> `status=fail`,
+  `missing_markers=["test_cli_reasoning_parser_choices_cover_family_registry_parsers"]`;
+- focused green:
+  `.venv/bin/python -m pytest -q tests/test_engine_audit.py::TestStartupCompatibilityGuards::test_cli_reasoning_parser_choices_cover_family_registry_parsers tests/test_parser_registry_contract.py::test_parser_registry_contract_pins_named_parser_edges`
+  -> `2 passed`;
+- parser gate:
+  `.venv/bin/python tests/cross_matrix/run_parser_registry_contract.py --out build/current-parser-registry-contract-20260522-reasoning-cli.json`
+  -> `status=pass`, `missing_markers=[]`, engine `103 passed`, panel
+  `40 passed / 246 skipped`;
+- release manifest:
+  `.venv/bin/python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-reasoning-cli.json`
+  -> 18 rows;
+- focused release tests:
+  `.venv/bin/python -m pytest -q tests/test_parser_registry_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `63 passed`;
+- py-compile and `git diff --check` -> pass;
+- umbrella:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools .venv/bin/python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-reasoning-cli.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`;
+- release surface:
+  `.venv/bin/python tests/cross_matrix/run_release_surface_contract.py --out build/current-release-surface-contract-20260522-reasoning-cli.json`
+  -> `status=pass`.
+
+This is no-heavy parser/CLI contract coverage. It does not claim live parser
+quality for every model family.

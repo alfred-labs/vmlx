@@ -88,11 +88,19 @@ Key artifacts:
   `tests/cross_matrix/run_production_family_audit.py --rows dsv4_jang_local --live`.
 - This does not clear DSV4 quality; it makes the remaining live gate
   reproducible and keeps release docs from referencing zombie scripts.
+- Added the no-heavy named model-family detection contract as its own durable
+  release-manifest row. The current suite already ran it, but the release
+  checklist now explicitly names the DSV4, ZAYA/ZAYA1-VL, Ling/Bailing,
+  Nemotron, Qwen 3.6 VL/video/hybrid, MXFP4, MXFP8, native-MTP, MiniMax, and
+  Hy3 parser/cache/modality compatibility proof.
 
 Key artifacts:
 
 - `build/current-release-regression-manifest-20260522-live-entrypoint.json`
 - `build/current-regression-suite-20260522-live-entrypoint.json`
+- `build/current-model-family-detection-contract-20260522-manifest-row.json`
+- `build/current-release-regression-manifest-20260522-family-row.json`
+- `build/current-regression-suite-20260522-family-row.json`
 
 ## Latest Verification
 
@@ -114,6 +122,12 @@ uv run --extra dev python -m pytest -q \
 uv run --extra dev python tests/cross_matrix/release_regression_manifest.py \
   > build/current-release-regression-manifest-20260522-live-entrypoint.json
 
+uv run --extra dev python tests/cross_matrix/run_model_family_detection_contract.py \
+  --out build/current-model-family-detection-contract-20260522-manifest-row.json
+
+uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
+  --out build/current-release-regression-manifest-20260522-family-row.json
+
 uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
   --out build/current-max-output-context-contract-20260522-chat-server-boundary.json
 
@@ -133,6 +147,10 @@ Observed results:
 - focused max-output/current-suite/manifest tests: `49 passed`;
 - manifest/current-suite tests after entrypoint hardening: `49 passed`;
 - umbrella suite after entrypoint hardening: `status=pass`, `failed_steps=[]`;
+- named model-family detection gate: `status=pass`, `missing_rows=[]`, engine
+  `31 passed`, panel `40 passed / 12 skipped`;
+- focused family/manifest/current-suite tests: `64 passed`;
+- umbrella suite after family manifest row: `status=pass`, `failed_steps=[]`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract: `status=pass`;
 - public updater primary/fallback remain `1.5.46`, PyPI `vmlx` remains

@@ -749,6 +749,76 @@ Green proof:
   `build/current-release-surface-contract-20260522-post-nemotron3-external.json`
   -> `status=pass`, with updater/source consistency checks green.
 
+## 2026-05-22 04:34 PDT - Auto Chat Max Tokens / Server Default Boundary
+
+Closed the direct edge Eric called out around separate Chat Max Tokens vs
+Server Default Max Output Tokens:
+
+- Chat Max Tokens set to Auto/disabled must omit per-request output caps.
+- When omitted, the server startup `--max-tokens` default or model-owned
+  generation metadata remains responsible for the response budget.
+- Explicit chat caps still override per request; this row only protects the
+  Auto path from accidentally sending `max_tokens`, `max_output_tokens`,
+  prompt/context caps, or DSV4 synthetic budgets.
+
+Red proof:
+
+- `uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py --out build/current-max-output-context-contract-20260522-chat-auto-server-default-red.json`
+- result: `status=fail`, `failed=[]`,
+  `missing_markers=["Auto chat maxTokens omits per-request output caps so server default can apply"]`;
+  existing engine and panel rows stayed green.
+- `uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py --out build/current-api-surface-contract-20260522-chat-auto-server-default-red.json`
+  reported the same missing panel marker. During this red check, the API
+  runner still returned top-level `status=pass`, which exposed a gate bug.
+
+Fix:
+
+- `panel/tests/request-builder.test.ts`
+  - added
+    `Auto chat maxTokens omits per-request output caps so server default can apply`;
+  - proves Chat Completions Auto, disabled `maxTokens: 0`, DSV4 Max thinking
+    with Auto budget, Responses Auto, and Responses disabled all omit
+    `max_tokens`, `max_output_tokens`, `max_prompt_tokens`,
+    `max_context_tokens`, and `max_context`;
+  - preserves DSV4 `reasoning_effort="max"` while still leaving the output
+    budget to the server/model default.
+- `tests/cross_matrix/run_api_surface_contract.py`
+  - added `all_required_panel_api_markers_present`, so missing required panel
+    request-builder markers fail the top-level API surface gate.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - chat settings row now points at
+    `build/current-max-output-context-contract-20260522-chat-auto-server-default.json`;
+  - API surface row now points at
+    `build/current-api-surface-contract-20260522-chat-auto-server-default.json`.
+
+Green proof:
+
+- focused panel test:
+  `cd panel && npx vitest run tests/request-builder.test.ts --testNamePattern "Auto chat maxTokens omits per-request output caps" --reporter=verbose`
+  -> `1 passed / 51 skipped`;
+- focused API contract tests:
+  `uv run --extra dev python -m pytest -q tests/test_api_surface_contract.py::test_api_surface_contract_pins_named_public_surface_edges tests/test_api_surface_contract.py::test_api_surface_contract_status_fails_when_required_panel_markers_are_missing`
+  -> `2 passed`;
+- max-output/context contract:
+  `uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py --out build/current-max-output-context-contract-20260522-chat-auto-server-default.json`
+  -> `status=pass`, `missing_markers=[]`, engine `20 passed`, panel
+  `36 passed / 290 skipped`;
+- API surface contract:
+  `uv run --extra dev python tests/cross_matrix/run_api_surface_contract.py --out build/current-api-surface-contract-20260522-chat-auto-server-default.json`
+  -> `status=pass`, `missing_panel_markers=[]`, server API surface
+  `21 passed`, panel request builders `67 passed`;
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-chat-auto-server-default.json`
+  -> 18 rows;
+- focused API/max-output/manifest/current-suite tests:
+  `uv run --extra dev python -m pytest -q tests/test_api_surface_contract.py tests/test_max_output_context_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `64 passed`;
+- py-compile for changed Python runners and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-chat-auto-server-default.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

@@ -1183,6 +1183,75 @@ Green proof:
   -> `status=pass`, `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`.
 
+## 2026-05-22 05:49 PDT - Fresh DSV4 Live Quality Blocker Recheck
+
+After pushing the stream cache-detail gate, reran the live DSV4 production row
+from current source:
+
+```sh
+uv run --extra dev python tests/cross_matrix/run_production_family_audit.py \
+  --rows dsv4_jang_local \
+  --live \
+  --out build/current-production-family-audit-live-dsv4-jang-local-20260522-after-stream-cache-detail.json
+```
+
+Result: `live: FAIL failures=5`.
+
+Passed rows:
+
+- DSV4 paged/native composite cache enabled;
+- canonical encoder shim;
+- multi-EOS;
+- cache stats/model capabilities/native cache capabilities;
+- runtime cache layout logging;
+- basic thinking-off chat;
+- thinking-on recall/toggle row;
+- structured Responses auto-tool choice;
+- Anthropic basic;
+- Ollama basic;
+- chat stream disconnect/done;
+- cache second-turn coherence;
+- no blocking runtime log findings.
+
+Failed rows:
+
+- `dsv4_thinking_mode_max`
+  - `finish="length"`, content empty, reasoning chars `4145`;
+  - still reasoning-only under max thinking for a simple arithmetic prompt.
+- `dsv4_threejs_identifier_integrity`
+  - deterministic request: thinking off, `temperature=0.0`, `top_p=1.0`,
+    `repetition_penalty=1.0`;
+  - output still added markdown fences and corrupted identifiers:
+    `THREE.PPerspectiveCamera`, `THREE.MMeshBasicMaterial`.
+- `dsv4_long_context_full_output_vc_project_plan`
+  - `finish="length"`, incomplete tail despite low loop score.
+- `dsv4_long_context_full_output_game_design_long_context`
+  - skipped because identifier gate failed.
+- `responses_tool_history_continuation`
+  - returned `READEOM.md`, another exact-token/code-ish corruption symptom.
+
+Static issue reported by the audit:
+
+- `DSV4 output-head/final-norm precision boundary requires source-vs-quant or rebuilt-artifact clearance before long-output production claims (head=U32, norm=F16)`
+
+No DSV4 server process was left running after the failed audit. This keeps the
+release decision blocked unless the DSV4 long-output/code quality row is
+explicitly descoped or a rebuilt/source-body artifact passes the live gate.
+
+Verification around the evidence update:
+
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-dsv4-live-recheck.json`
+  -> 18 rows;
+- focused manifest/current-suite tests:
+  `uv run --extra dev python -m pytest -q tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `61 passed`;
+- py-compile for changed Python files and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-dsv4-live-recheck.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

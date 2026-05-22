@@ -679,6 +679,10 @@ Green proof:
   `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-ollama-context-malformed.json`
   -> `status=pass`, `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`.
+- pushed `0dab0346 fix: drop malformed ollama context caps` to `origin/main`;
+- post-push release surface:
+  `build/current-release-surface-contract-20260522-post-ollama-context-malformed.json`
+  -> `status=pass`, with updater/source consistency checks green.
 
 ## Release Decision
 

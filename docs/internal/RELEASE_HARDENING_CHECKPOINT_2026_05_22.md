@@ -819,6 +819,73 @@ Green proof:
   -> `status=pass`, `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`.
 
+## 2026-05-22 04:43 PDT - Reasoning Parser Dropdown / Registry Parity
+
+Closed another MiniMax-style release regression edge:
+
+- The engine and panel registry already had parser parity tests for emitted
+  tool/reasoning parser ids.
+- The UI dropdown had coverage for tool parsers, but it did not have an
+  exhaustive guard proving every `reasoningParser` emitted by
+  `model-config-registry.ts` is selectable in `SessionConfigForm`.
+- That missing guard could allow a future family autodetect row to emit a
+  parser that backend/CLI accepts while the settings UI cannot display or
+  preserve it.
+
+Red proof:
+
+- `uv run --extra dev python tests/cross_matrix/run_parser_registry_contract.py --out build/current-parser-registry-contract-20260522-reasoning-dropdown-red.json`
+  initially reported missing marker
+  `reasoning parser dropdown covers every parser the panel registry can emit`;
+- that red run also exposed a gate bug: missing required parser markers did not
+  fail top-level status;
+- after adding `all_required_parser_markers_present`, the status-red artifact
+  `build/current-parser-registry-contract-20260522-reasoning-dropdown-status-red.json`
+  failed on the same missing marker.
+
+Fix:
+
+- `panel/tests/settings-flow.test.ts`
+  - added
+    `reasoning parser dropdown covers every parser the panel registry can emit`;
+  - parses panel registry `reasoningParser: '...'` literals and asserts every
+    emitted parser exists in the settings form dropdown values.
+- `tests/cross_matrix/run_parser_registry_contract.py`
+  - added the required marker;
+  - added top-level gate check
+    `all_required_parser_markers_present`.
+- `tests/test_parser_registry_contract.py`
+  - pins the required marker;
+  - pins that missing parser markers fail the parser contract status.
+- `tests/cross_matrix/release_regression_manifest.py`
+  - parser row now points at
+    `build/current-parser-registry-contract-20260522-reasoning-dropdown.json`;
+  - manifest text explicitly records reasoning parser dropdown coverage.
+
+Green proof:
+
+- focused panel test:
+  `cd panel && npx vitest run tests/settings-flow.test.ts --testNamePattern "reasoning parser dropdown covers every parser" --reporter=verbose`
+  -> `1 passed / 231 skipped`;
+- focused parser contract tests:
+  `uv run --extra dev python -m pytest -q tests/test_parser_registry_contract.py`
+  -> `2 passed`;
+- full parser registry contract:
+  `uv run --extra dev python tests/cross_matrix/run_parser_registry_contract.py --out build/current-parser-registry-contract-20260522-reasoning-dropdown.json`
+  -> `status=pass`, `failed=[]`, `missing_markers=[]`, engine
+  `102 passed`, panel `40 passed / 244 skipped`;
+- release manifest:
+  `uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py --out build/current-release-regression-manifest-20260522-reasoning-dropdown.json`
+  -> 18 rows;
+- focused parser/manifest/current-suite tests:
+  `uv run --extra dev python -m pytest -q tests/test_parser_registry_contract.py tests/test_release_regression_manifest.py tests/test_current_regression_suite.py`
+  -> `62 passed`;
+- py-compile for changed Python runners and `git diff --check` -> pass;
+- umbrella suite:
+  `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-reasoning-dropdown.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement remains
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
 ## Release Decision
 
 No release build has been started from this checkpoint. The next release action

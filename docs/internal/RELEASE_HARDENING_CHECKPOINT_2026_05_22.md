@@ -2717,3 +2717,65 @@ Green:
   `DSV4 long-output/code/file-generation quality is release-cleared`.
 
 No runtime behavior changed. This is release-proof tightening for parser rails.
+
+## 2026-05-22 13:22 PDT - DSV4 Pool Env Gate Added After Speed/Spacing Trace
+
+Root-cause read from current artifacts:
+
+- DSV4 native prefix/paged/L2 replay with pool quant off is not the 2-3 tok/s
+  path. The traced cache-hit tool round generated 83 tokens in 3.906s and
+  showed `cache_detail=paged+dsv4`.
+- DSV4 pool quant on remains too slow after the append-only JANG fix because
+  `PoolQuantizedV4Cache.update_pool()` still returns `state["pooled"]`, and
+  that getter dequantizes and concatenates the whole historical CSA/HCA pool
+  on attention reads during decode.
+- Raw stream spacing artifacts did not show whitespace corruption:
+  `has_spacing_suspect=false` for both pool-off and pool-on stream probes.
+  UI spacing corruption is therefore still a separate boundary until raw SSE
+  vs renderer assembly is captured from the failing app session.
+- Malformed DSML syntax/file-write quality remains open and happened with pool
+  quant off in the default-cache tool loop (`tool_ciles`, `tool_ctools`,
+  `inv` variants), so it must not be blamed only on pool quant.
+
+Changes:
+
+- Added `panel/src/shared/dsv4Env.ts` and `panel/tests/dsv4-env.test.ts` to
+  the cache architecture gate source hashes.
+- Required the panel marker proving an old saved `dsv4PoolQuant=true` session
+  still launches with `DSV4_POOL_QUANT=0`.
+- Updated the DSV4 env helper comment to match the real current bottleneck:
+  append-only writes are fixed, but full historical pool dequant/concat on
+  attention read remains too slow.
+- Updated release manifest cache row to point at:
+  `build/current-cache-architecture-contract-20260522-dsv4-pool-env-gate.json`.
+
+Red:
+
+- `tests/test_cache_architecture_contract.py` failed because the DSV4 env helper
+  and panel env test were not hashed, and the pool-quant-disabled marker was
+  not required.
+- `tests/test_release_regression_manifest.py::test_release_regression_manifest_tracks_cache_architecture_with_runner_artifact`
+  failed because the manifest did not list the new artifact/proof.
+
+Green:
+
+- `.venv/bin/python -m pytest -q tests/test_cache_architecture_contract.py`
+  -> `2 passed`;
+- cache architecture gate:
+  `build/current-cache-architecture-contract-20260522-dsv4-pool-env-gate.json`
+  -> `status=pass`, `missing_markers=[]`, cache-family `108 passed`,
+  panel cache launch `88 passed`;
+- release manifest:
+  `build/current-release-regression-manifest-20260522-dsv4-pool-env-gate.json`
+  -> `18 rows`;
+- umbrella suite with clean JANG source:
+  `build/current-regression-suite-20260522-dsv4-pool-env-gate.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly:
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
+Release read:
+
+- Keep `DSV4_POOL_QUANT=0` for production app launches.
+- DSV4 native prefix/paged/L2 can remain a diagnostic opt-in path with pool
+  quant off, but DSML tool syntax/file-write quality and DSV4 long-output/code
+  quality are still separate open rows.

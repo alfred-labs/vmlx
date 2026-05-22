@@ -119,6 +119,7 @@ Key artifacts:
 - `build/current-regression-suite-20260522-live-overclaim.json`
 - `build/current-release-regression-manifest-20260522-concrete-artifacts.json`
 - `build/current-regression-suite-20260522-concrete-artifacts.json`
+- `build/current-release-surface-contract-20260522-post-concrete-artifacts.json`
 
 ## Latest Verification
 
@@ -164,7 +165,7 @@ uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py \
   --out build/current-regression-suite-20260522-concrete-artifacts.json
 
 uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
-  --out build/current-release-surface-contract-20260522-post-chat-server-boundary.json
+  --out build/current-release-surface-contract-20260522-post-concrete-artifacts.json
 ```
 
 Observed results:
@@ -191,7 +192,7 @@ Observed results:
 - umbrella suite after concrete-artifact guard: `status=pass`,
   `failed_steps=[]`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
-- release surface contract: `status=pass`;
+- release surface contract after pushing `177b9cd4`: `status=pass`;
 - public updater primary/fallback remain `1.5.46`, PyPI `vmlx` remains
   `1.5.46`, and GitHub `jjang-ai/vmlx` release `v1.5.47` is not published;
 - known open objective remains only DSV4 long-output/code quality.

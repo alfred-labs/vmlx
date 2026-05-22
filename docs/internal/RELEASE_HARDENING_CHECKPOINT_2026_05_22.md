@@ -218,6 +218,9 @@ uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py \
 
 uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
   --out build/current-release-surface-contract-20260522-post-new-chat-max-output.json
+
+uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
+  --out build/current-release-surface-contract-20260522-post-cli-parser-choices.json
 ```
 
 Observed results:
@@ -275,6 +278,7 @@ Observed results:
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract after pushing `cdb7d0f0`: `status=pass`;
 - release surface contract after pushing `177b9cd4`: `status=pass`;
+- release surface contract after pushing `c36e7ace`: `status=pass`;
 - public updater primary/fallback remain `1.5.46`, PyPI `vmlx` remains
   `1.5.46`, and GitHub `jjang-ai/vmlx` release `v1.5.47` is not published;
 - known open objective remains only DSV4 long-output/code quality.

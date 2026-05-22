@@ -3725,6 +3725,56 @@ Release read:
   `DSV4 long-output/code/file-generation quality is release-cleared`.
 - DSV4 long-output/code/file-generation quality remains open.
 
+## 2026-05-22 16:26 PDT - Bundled SingleBatch Hash Parity Gate
+
+Scope:
+
+- Closed the packaging gap left by the source `SingleBatchGenerator` fix.
+- The existing bundled-source parity gates covered `mllm_batch_generator.py`
+  but not `utils/single_batch_generator.py`, so a release build could have
+  carried stale single-batch prefill behavior while still passing the older
+  verifier.
+
+Red failure:
+
+- `tests/test_release_gate_python_app.py::test_packaged_bundled_hash_gate_covers_runtime_files_changed_for_release`
+  and
+  `tests/test_release_gate_python_app.py::test_verify_bundled_python_hash_gate_covers_release_runtime_files`
+  failed until `utils/single_batch_generator.py` was added to both parity
+  lists.
+- The first packaged integrity run also failed exactly on bundled/source drift:
+  `build/current-packaged-integrity-contract-20260522-singlebatch-hashgate.json`
+  -> `status=fail`, bundled
+  `vmlx_engine/utils/single_batch_generator.py` content drift.
+
+Change:
+
+- Added `utils/single_batch_generator.py` to:
+  - `panel/scripts/release-gate-python-app.py::BUNDLED_SOURCE_HASH_PATHS`;
+  - `panel/scripts/verify-bundled-python.sh::HASH_GATED_ENGINE_FILES`.
+- Rebuilt `panel/bundled-python` from this checkout with clean JANG source:
+  `/Users/eric/jang/.worktrees/vmlx-release-clean-b5f66a7/jang-tools`.
+
+Verification:
+
+- Focused release-gate tests:
+  `.venv/bin/python -m pytest -q tests/test_release_gate_python_app.py::test_packaged_bundled_hash_gate_covers_runtime_files_changed_for_release tests/test_release_gate_python_app.py::test_verify_bundled_python_hash_gate_covers_release_runtime_files`
+  -> `2 passed`.
+- Packaged integrity after rebundle:
+  `build/current-packaged-integrity-contract-20260522-singlebatch-hashgate-after-bundle.json`
+  -> `status=pass`, `failed=[]`, bundled engine hash parity true, bundled
+  JANG tools hash parity true, bundled critical imports true.
+- Clean-JANG umbrella after rebundle:
+  `build/current-regression-suite-20260522-singlebatch-hashgate-bundled.json`
+  -> `status=pass`, `failed_steps=[]`, open requirement exactly
+  `DSV4 long-output/code/file-generation quality is release-cleared`.
+
+Release read:
+
+- The packaged/bundled runtime now carries the single-batch prefill keep-alloc
+  source fix and future release gates will fail if this file drifts.
+- This still does not clear DSV4 long-output/code/file-generation quality.
+
 Verification:
 
 - Focused red/green guard:

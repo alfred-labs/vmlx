@@ -117,6 +117,11 @@ Key artifacts:
   JANG-only MX matmul, JANGTQ/MXTQ TurboQuant, MXFP4, and MXFP8-MTP rows.
   Each distinct row class must keep explicit PP/decode thresholds and the
   release manifest now points at the current family artifact.
+- Added a decode-speed parser-registration guard so every declared tool or
+  reasoning parser in the family/speed matrix must be accepted by the engine
+  registries, even when the model path is not present locally. This directly
+  protects against MiniMax-style stale parser ids returning through another
+  family row.
 
 Key artifacts:
 
@@ -140,6 +145,9 @@ Key artifacts:
 - `build/current-model-family-detection-contract-20260522-distinct-speed-rows.json`
 - `build/current-release-regression-manifest-20260522-distinct-speed-rows.json`
 - `build/current-regression-suite-20260522-distinct-speed-rows.json`
+- `build/current-model-family-detection-contract-20260522-parser-registry-rows.json`
+- `build/current-release-regression-manifest-20260522-parser-registry-rows.json`
+- `build/current-regression-suite-20260522-parser-registry-rows.json`
 
 ## Latest Verification
 
@@ -185,8 +193,14 @@ uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py 
 uv run --extra dev python tests/cross_matrix/run_model_family_detection_contract.py \
   --out build/current-model-family-detection-contract-20260522-distinct-speed-rows.json
 
+uv run --extra dev python tests/cross_matrix/run_model_family_detection_contract.py \
+  --out build/current-model-family-detection-contract-20260522-parser-registry-rows.json
+
 uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
   --out build/current-release-regression-manifest-20260522-distinct-speed-rows.json
+
+uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
+  --out build/current-release-regression-manifest-20260522-parser-registry-rows.json
 
 uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
   --out build/current-max-output-context-contract-20260522-chat-server-boundary.json
@@ -237,6 +251,13 @@ Observed results:
   `70 passed`;
 - release manifest artifact after distinct speed-row guard: 17 rows;
 - umbrella suite after distinct speed-row guard: `status=pass`,
+  `failed_steps=[]`;
+- model-family gate after parser-registration guard: `status=pass`,
+  `missing_rows=[]`, engine `33 passed`, panel `40 passed / 12 skipped`;
+- family/parser/manifest/current-suite tests after parser-registration guard:
+  `72 passed`;
+- release manifest artifact after parser-registration guard: 17 rows;
+- umbrella suite after parser-registration guard: `status=pass`,
   `failed_steps=[]`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract after pushing `cdb7d0f0`: `status=pass`;

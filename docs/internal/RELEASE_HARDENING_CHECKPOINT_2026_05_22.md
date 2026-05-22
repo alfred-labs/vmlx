@@ -105,6 +105,11 @@ Key artifacts:
 - Added a concrete-artifact invariant so release rows cannot list directory
   placeholders as proof artifacts. The live multifamily soak row now points
   only at the generated JSON proof file, not `docs/internal/release-gates/`.
+- Added a new-chat max-output inheritance guard so a previous chat or default
+  profile cannot turn an old per-chat output cap into a sticky server/session
+  cap. The test preserves model-owned `maxTokens` already derived for a new
+  chat while refusing inherited `maxTokens=32768` and other sampler/prompt
+  overrides from the previous chat.
 
 Key artifacts:
 
@@ -120,6 +125,8 @@ Key artifacts:
 - `build/current-release-regression-manifest-20260522-concrete-artifacts.json`
 - `build/current-regression-suite-20260522-concrete-artifacts.json`
 - `build/current-release-surface-contract-20260522-post-concrete-artifacts.json`
+- `build/current-max-output-context-contract-20260522-new-chat-max-output.json`
+- `build/current-regression-suite-20260522-new-chat-max-output.json`
 
 ## Latest Verification
 
@@ -157,6 +164,9 @@ uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py 
   --out build/current-release-regression-manifest-20260522-concrete-artifacts.json
 
 uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
+  --out build/current-max-output-context-contract-20260522-new-chat-max-output.json
+
+uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
   --out build/current-max-output-context-contract-20260522-chat-server-boundary.json
 
 VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
@@ -191,6 +201,11 @@ Observed results:
   concrete paths;
 - umbrella suite after concrete-artifact guard: `status=pass`,
   `failed_steps=[]`;
+- max-output gate after new-chat inheritance guard: `status=pass`,
+  `missing_markers=[]`, engine `14 passed`, panel `33 passed / 1 skipped`;
+- focused max-output/manifest/current-suite tests after new-chat guard:
+  `55 passed`;
+- umbrella suite after new-chat guard: `status=pass`, `failed_steps=[]`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract after pushing `177b9cd4`: `status=pass`;
 - public updater primary/fallback remain `1.5.46`, PyPI `vmlx` remains

@@ -26,12 +26,19 @@ public release and before any v1.5.47 build/sign/publish action.
 - Pinned coding-tool config behavior: huge context from `/health` stays
   context-only; missing output capabilities fall back to output `4096`, not
   the context value.
+- Pinned chat override storage behavior: per-chat `maxTokens` remains a
+  request-scoped output cap and cannot mutate session startup `maxTokens`,
+  model settings, or prompt/context wiring. Session launch still reads
+  `config.maxTokens` for `--max-tokens` and `config.maxContextLength` for
+  `--max-prompt-tokens`.
 
 Key artifacts:
 
 - `build/current-max-output-context-contract-20260522-profile-max-green.json`
 - `build/current-max-output-context-contract-20260522-coding-tools-final.json`
+- `build/current-max-output-context-contract-20260522-chat-server-boundary.json`
 - `build/current-regression-suite-20260522-coding-tools-boundary.json`
+- `build/current-regression-suite-20260522-chat-server-boundary.json`
 
 ### Tool Calls, Parser Cleanup, And Panel Tool Loops
 
@@ -75,6 +82,7 @@ Key artifacts:
 
 ```sh
 uv run --extra dev python -m py_compile \
+  tests/cross_matrix/run_max_output_context_contract.py \
   tests/cross_matrix/run_mcp_policy_contract.py \
   tests/cross_matrix/run_current_regression_suite.py \
   tests/cross_matrix/release_regression_manifest.py
@@ -82,14 +90,18 @@ uv run --extra dev python -m py_compile \
 git diff --check
 
 uv run --extra dev python -m pytest -q \
+  tests/test_max_output_context_contract.py \
   tests/test_mcp_policy_contract.py \
   tests/test_release_regression_manifest.py \
   tests/test_current_regression_suite.py
 
+uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
+  --out build/current-max-output-context-contract-20260522-chat-server-boundary.json
+
 VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
 VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
 uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py \
-  --out build/current-regression-suite-20260522-mcp-marker-hardening.json
+  --out build/current-regression-suite-20260522-chat-server-boundary.json
 
 uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
   --out build/current-release-surface-contract-20260522-post-mcp-marker-hardening.json
@@ -97,7 +109,9 @@ uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
 
 Observed results:
 
-- focused MCP/current-suite/manifest tests: `50 passed`;
+- max-output gate: `status=pass`, `missing_markers=[]`, engine `14 passed`,
+  panel `32 passed / 1 skipped`;
+- focused max-output/current-suite/manifest tests: `49 passed`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract: `status=pass`;
 - known open objective remains only DSV4 long-output/code quality.

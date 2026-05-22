@@ -744,6 +744,10 @@ Green proof:
   `VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py --out build/current-regression-suite-20260522-nemotron3-external.json`
   -> `status=pass`, `failed_steps=[]`, open requirement remains
   `DSV4 long-output/code/file-generation quality is release-cleared`.
+- pushed `c93df9d0 test: pin external nemotron speed rows` to `origin/main`;
+- post-push release surface:
+  `build/current-release-surface-contract-20260522-post-nemotron3-external.json`
+  -> `status=pass`, with updater/source consistency checks green.
 
 ## Release Decision
 

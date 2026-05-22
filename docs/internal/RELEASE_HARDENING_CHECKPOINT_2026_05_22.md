@@ -102,6 +102,9 @@ Key artifacts:
   coverage from a command that only names Qwen 3.6 hybrid rows; those
   Qwen MTP/VL/video rows remain no-heavy family-detection coverage until
   dedicated live-audit rows exist.
+- Added a concrete-artifact invariant so release rows cannot list directory
+  placeholders as proof artifacts. The live multifamily soak row now points
+  only at the generated JSON proof file, not `docs/internal/release-gates/`.
 
 Key artifacts:
 
@@ -114,6 +117,8 @@ Key artifacts:
 - `build/current-regression-suite-20260522-live-soak-command.json`
 - `build/current-release-regression-manifest-20260522-live-overclaim.json`
 - `build/current-regression-suite-20260522-live-overclaim.json`
+- `build/current-release-regression-manifest-20260522-concrete-artifacts.json`
+- `build/current-regression-suite-20260522-concrete-artifacts.json`
 
 ## Latest Verification
 
@@ -147,13 +152,16 @@ uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py 
 uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
   --out build/current-release-regression-manifest-20260522-live-overclaim.json
 
+uv run --extra dev python tests/cross_matrix/run_release_regression_manifest.py \
+  --out build/current-release-regression-manifest-20260522-concrete-artifacts.json
+
 uv run --extra dev python tests/cross_matrix/run_max_output_context_contract.py \
   --out build/current-max-output-context-contract-20260522-chat-server-boundary.json
 
 VMLINUX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
 VMLX_JANG_TOOLS_SOURCE=/Users/eric/jang/.worktrees/vmlx-release-clean-7f643ed/jang-tools \
 uv run --extra dev python tests/cross_matrix/run_current_regression_suite.py \
-  --out build/current-regression-suite-20260522-chat-server-boundary.json
+  --out build/current-regression-suite-20260522-concrete-artifacts.json
 
 uv run --extra dev python tests/cross_matrix/run_release_surface_contract.py \
   --out build/current-release-surface-contract-20260522-post-chat-server-boundary.json
@@ -175,6 +183,13 @@ Observed results:
   `failed_steps=[]`;
 - manifest/current-suite tests after live-overclaim guard: `53 passed`;
 - umbrella suite after live-overclaim guard: `status=pass`, `failed_steps=[]`;
+- focused concrete-artifact guard: red failed on `docs/internal/release-gates/`,
+  then green after removing the directory artifact;
+- manifest/current-suite tests after concrete-artifact guard: `54 passed`;
+- manifest artifact after concrete-artifact guard: 17 rows, all artifacts are
+  concrete paths;
+- umbrella suite after concrete-artifact guard: `status=pass`,
+  `failed_steps=[]`;
 - umbrella suite: `status=pass`, `failed_steps=[]`;
 - release surface contract: `status=pass`;
 - public updater primary/fallback remain `1.5.46`, PyPI `vmlx` remains

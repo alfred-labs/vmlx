@@ -181,6 +181,109 @@ try:
 except Exception:
     pass
 
+# =========================================================================
+# RotatingKVCache max_size widening (mixed-attention prefix-cache fix)
+# =========================================================================
+#
+# Why this exists
+# ---------------
+# Mixed-attention models (Gemma 4 sliding+full, gpt-oss, exaone-moe, cohere2,
+# llama-with-sliding-window, etc.) build their sliding layers with
+# ``RotatingKVCache(max_size=sliding_window)`` — typically 512 tokens. As soon
+# as a prompt exceeds that window, ``mllm_scheduler._truncate_hybrid_cache``
+# bails on ``offset > max_size`` and returns ``None``, which silently
+# disables every prefix-cache write for the request: no L0 paged insert, no
+# L1 block disk write-through, no L2 prompt store. The cache pyramid exists
+# but never receives data for long-prompt sessions (agent-style system
+# prompts of 1–3 k tokens plus multi-turn history easily clear the trained
+# window).
+#
+# What this patch does
+# --------------------
+# Monkey-patch ``RotatingKVCache.__init__`` at import time. When a caller
+# constructs the cache with ``max_size=N``, we enlarge ``max_size`` to at
+# least ``ROTATING_KV_DEFAULT_MAX`` (32 768) — or higher if the env var
+# ``VMLX_ROTATING_KV_MAX_TOKENS`` is set to a larger value.
+#
+# Why this is compute-safe
+# ------------------------
+# The attention mask is computed independently in the model's forward pass.
+# It still uses the trained ``sliding_window`` to decide which past tokens
+# contribute to attention. Only the K/V tensor reservation grows. Logits
+# and output tokens are bit-identical to upstream — we just stop tripping
+# the truncation guard.
+#
+# Why patch the class and not a callsite
+# --------------------------------------
+# vmlx loaders (``smelt_loader``, ``jang_loader``, ``tokenizer``) reassign
+# ``model.make_cache`` to their own factories that do not read the env. And
+# on ``mlx-lm >= 0.31.2`` models load via ``mlx_lm.models.gemma4_text.Model``
+# directly, bypassing the vendored copy. Wrapping the class constructor is
+# the only point that catches every construction path: the model's own
+# ``make_cache``, smelt/jang/tq overrides, the prefix-cache reconstruction
+# in ``prefix_cache.py``, and mamba companion constructors.
+#
+# Relation to upstream b9fbabd4
+# -----------------------------
+# Upstream's "Gemma 4 multi-turn auto-bypass" deliberately *disables* the
+# prefix cache on mixed-attention models to cure ``step-by-step…`` word-loops
+# at ``rep_pen=1.1``. That trade-off makes sense when the deployment can hit
+# that sampler config. This patch takes the opposite stance: keep the cache
+# active, trading the loop-protection (which deployments not using
+# ``rep_pen=1.1`` do not benefit from anyway) for the multi-turn speedup.
+#
+# Idempotent
+# ----------
+# The patch is gated by a sentinel so re-importing or reloading the module
+# never chains wrappers.
+try:
+    import os as _os
+    from mlx_lm.models.cache import RotatingKVCache as _RotatingKVCache
+
+    ROTATING_KV_DEFAULT_MAX = 32768
+    ROTATING_KV_OVERRIDE_ENV = "VMLX_ROTATING_KV_MAX_TOKENS"
+    _ROTATING_KV_PATCH_FLAG = "_vmlx_rotating_kv_widened"
+
+    def _effective_rotating_kv_max_size():
+        """Return the minimum max_size the patch should enforce.
+
+        Picks the larger of ``ROTATING_KV_DEFAULT_MAX`` and the integer
+        value of ``VMLX_ROTATING_KV_MAX_TOKENS`` if set and parseable.
+        """
+        override = 0
+        raw = _os.environ.get(ROTATING_KV_OVERRIDE_ENV)
+        if raw is not None:
+            try:
+                override = int(raw)
+            except (TypeError, ValueError):
+                override = 0
+        return max(ROTATING_KV_DEFAULT_MAX, override)
+
+    if not getattr(_RotatingKVCache.__init__, _ROTATING_KV_PATCH_FLAG, False):
+        _orig_rkv_init = _RotatingKVCache.__init__
+
+        def _patched_rkv_init(self, *args, **kwargs):
+            effective = _effective_rotating_kv_max_size()
+
+            if "max_size" in kwargs:
+                if effective > kwargs["max_size"]:
+                    kwargs["max_size"] = effective
+            elif args:
+                current = args[0]
+                if effective > current:
+                    args = (effective,) + args[1:]
+            else:
+                kwargs["max_size"] = effective
+
+            _orig_rkv_init(self, *args, **kwargs)
+
+        setattr(_patched_rkv_init, _ROTATING_KV_PATCH_FLAG, True)
+        _RotatingKVCache.__init__ = _patched_rkv_init
+except Exception:
+    # mlx_lm not available (e.g. non-Apple platforms during packaging),
+    # or class signature changed — leave upstream behaviour in place.
+    pass
+
 # All imports are lazy to allow usage on non-Apple Silicon platforms
 # (e.g., CI running on Linux) where mlx_lm is not available.
 
